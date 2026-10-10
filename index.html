@@ -167,7 +167,7 @@
     <div class="stats" id="stats"></div>
     <section><h2>About</h2><div id="about"></div></section>
     <section><h2>Links</h2><div class="links" id="socials"></div></section>
-    <section id="videoSec"><h2>Latest video</h2><div class="video" id="video"></div></section>
+    <section id="videoSec"><h2 id="videoTitle">Latest video</h2><div class="video" id="video"></div></section>
   </div>
 </div>
 
@@ -330,11 +330,35 @@
   if (SITE.addons.length) addStat("Addons released", String(SITE.addons.length));
 
   // ---------- Latest video ----------
+  // Video ID ya poori YouTube link se 11 character ki ID nikalta hai
+  function ytId(s) {
+    const m = String(s || "").match(/(?:v=|youtu\.be\/|embed\/|shorts\/|^)([A-Za-z0-9_-]{11})(?:[?&#\/]|$)/);
+    return m ? m[1] : "";
+  }
   const cid = SITE.youtubeChannelId;
-  if (cid && cid.indexOf("UC") === 0) {
+  const fid = ytId(SITE.featuredVideoId);
+  const plRaw = String(SITE.featuredPlaylistId || "").trim();
+  const plm = plRaw.match(/list=([A-Za-z0-9_-]+)/);
+  const plid = plm ? plm[1] : plRaw;
+  // YouTube ke automatic playlists: popular videos, sirf videos (Shorts ke bina), sab uploads
+  const FEEDS = { popular: "UULP", videos: "UULF", uploads: "UU" };
+  let vsrc = "";
+  if (fid) {
+    vsrc = "https://www.youtube.com/embed/" + fid;
+    $("videoTitle").textContent = "Featured video";
+  } else if (plid) {
+    vsrc = "https://www.youtube.com/embed/videoseries?list=" + encodeURIComponent(plid);
+    $("videoTitle").textContent = "Featured video";
+  } else if (cid && cid.indexOf("UC") === 0) {
+    const feed = SITE.videoFeed || "popular";
+    vsrc = "https://www.youtube.com/embed/videoseries?list=" + (FEEDS[feed] || FEEDS.popular) + cid.slice(2);
+    $("videoTitle").textContent = feed === "popular" ? "Top video" : "Latest video";
+  }
+  if (vsrc) {
     $("video").appendChild(el("iframe", {
-      src: "https://www.youtube.com/embed/videoseries?list=UU" + cid.slice(2),
-      title: "Latest video", loading: "lazy", allowfullscreen: ""
+      src: vsrc, title: "BladeLow video", loading: "lazy", allowfullscreen: "",
+      referrerpolicy: "strict-origin-when-cross-origin",
+      allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     }));
   } else {
     $("videoSec").remove();
