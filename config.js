@@ -9,7 +9,7 @@ const SITE = {
   // --- Basic ---
   name: "BladeLow",
   pageTitle: "BladeLow | Minecraft addons, AI and more",
-  tagline: "Minecraft addons, AI projects and experiments. Subscribe for an R.I.P. Creeper.",
+  tagline: "Minecraft Bedrock add-on dev",
 
   // Profile picture (file ka naam, index.html ke saath same folder me honi chahiye). Khali "" = hata dega.
   avatar: "pfp.jpg",
@@ -26,7 +26,7 @@ const SITE = {
   // --- Hero ke neeche ke bade buttons ---
   // icon options: "youtube", "instagram", "discord", "curseforge", "link"
   heroButtons: [
-    { text: "Join the Discord", url: "#", icon: "discord" },
+    { text: "Join the Discord", url: "https://discord.gg/XcUkm6mMEm", icon: "discord" },
     { text: "Watch on YouTube", url: "https://www.youtube.com/@BladeLow", icon: "youtube" }
   ],
 
@@ -39,16 +39,16 @@ const SITE = {
   // --- Social links (naya add karna ho to ek { } block copy karke paste kar) ---
   socials: [
     { name: "YouTube", url: "https://www.youtube.com/@BladeLow", note: "Videos, edits and tutorials", icon: "youtube" },
-    { name: "Instagram", url: "#", note: "Updates and reels", icon: "instagram" },
-    { name: "Discord", url: "#", note: "Live chat community", icon: "discord" },
+    { name: "Instagram", url: "https://www.instagram.com/_bladelow_/", note: "Updates and reels", icon: "instagram" },
+    { name: "Discord", url: "https://discord.gg/XcUkm6mMEm", note: "Live chat community", icon: "discord" },
     { name: "CurseForge", url: "#", note: "Download my addons", icon: "curseforge" }
   ],
 
   // --- Stats (Home page pe numbers) ---
   stats: {
     // Manual numbers: auto-fetch fail ho ya setup na ho to ye dikhenge. Khali "" = chhup jayega.
-    subscribers: "734",   // abhi ka number, kabhi kabhi khud update kar dena
-    discordMembers: "",
+    subscribers: "700+",   // abhi ka number, kabhi kabhi khud update kar dena
+    discordMembers: "50+",
 
     // Subscriber goal: progress bar dikhayega (jaise "Road to 1K"). Nahi chahiye to 0 ya "" kar de.
     goal: 1000,
