@@ -62,6 +62,11 @@ const SITE = {
     discordInviteCode: "XcUkm6mMEm"
   },
 
+   discordServerId: "1460962421073117246",
+redditUrl: "https://www.reddit.com/r/BladeLow",
+team: [
+  { name: "BladeLow", role: "Owner" }
+],
   // --- Addons / projects (CurseForge links yahan) ---
   addons: [
     {
