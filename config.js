@@ -80,8 +80,7 @@ team: [
   // --- Upcoming content plans ---
   // status me kuch bhi likh sakta hai: "Planning", "In progress", "Done"
   upcoming: [
-    { title: "", status: "", desc: "" },
-    { title: "n", status: "", desc: "" }
+    { title: "New addon that will make your minecraft bedrock feel new", status: "Working on", desc: "20% done" }
   ],
 
   // --- Latest YouTube video (apne aap update hota hai) ---
