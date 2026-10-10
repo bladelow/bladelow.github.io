@@ -94,10 +94,10 @@ const SITE = {
   // Giscus setup: https://giscus.app pe jaa, apna repo daal, jo 4 values mile wo yahan paste kar.
   // Khali chhodega to Ideas tab me setup ka message dikhega.
   giscus: {
-    repo: "",       // example: "sujaydhara654-jpg/sujaydhara654-jpg.github.io"
-    repoId: "",
-    category: "",   // example: "Ideas"
-    categoryId: ""
+    repo: "bladelow/bladelow.github.io",       // example: "sujaydhara654-jpg/sujaydhara654-jpg.github.io"
+    repoId: "R_kgDOVDxKAA",
+    category: "Announcements",   // example: "Ideas"
+    categoryId: "DIC_kwDOVDxKAM4DHf3G"
   },
 
   footer: "Made by BladeLow"
