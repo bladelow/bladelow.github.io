@@ -39,9 +39,9 @@ const SITE = {
   // --- Social links (naya add karna ho to ek { } block copy karke paste kar) ---
   socials: [
     { name: "YouTube", url: "https://www.youtube.com/@BladeLow", note: "Videos, edits and tutorials", icon: "youtube" },
-    { name: "Instagram", url: "https://www.instagram.com/_bladelow_/", note: "Updates and reels", icon: "instagram" },
+    { name: "Instagram", url: "https://www.instagram.com/_bladelow_", note: "Updates and reels", icon: "instagram" },
     { name: "Discord", url: "https://discord.gg/XcUkm6mMEm", note: "Live chat community", icon: "discord" },
-    { name: "CurseForge", url: "www.curseforge.com/members/bladelow/projects", note: "Download my addons", icon: "curseforge" }
+    { name: "CurseForge", url: "https://www.curseforge.com/members/bladelow", note: "Download my addons", icon: "curseforge" }
   ],
 
   // --- Stats (Home page pe numbers) ---
