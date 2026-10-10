@@ -126,6 +126,10 @@
   .video { position: relative; aspect-ratio: 16 / 9; background: #000; max-width: 900px; }
   .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
+  .comm-grid { display: grid; grid-template-columns: 1fr 350px; gap: 2.5rem; align-items: start; }
+  #discordWidget { display: block; border: 0; max-width: 100%; background: var(--ink2); }
+  @media (max-width: 860px) { .comm-grid { grid-template-columns: 1fr; } }
+
   .note { padding: 1rem 1.2rem; background: var(--ink2); border: 1px dashed var(--steel); color: var(--steel); }
   #comments { margin-top: 1.5rem; }
 
@@ -182,12 +186,27 @@
 <!-- ============ COMMUNITY ============ -->
 <div class="tab" id="tab-community" hidden>
   <div class="wrap">
-    <section>
-      <h2>Community</h2>
-      <p id="communityText"></p>
-      <div class="btns"><a class="btn" id="discordBtn" href="#"></a></div>
-      <p style="margin-top:1.5rem;color:var(--steel)">Want to suggest something for my content? Head to the <a href="#ideas" style="color:var(--edge);font-weight:700">Ideas</a> tab.</p>
-    </section>
+    <div class="comm-grid" id="commGrid">
+      <div>
+        <section>
+          <h2>Community</h2>
+          <p id="communityText"></p>
+          <div class="btns" id="communityButtons"></div>
+        </section>
+        <section id="teamSec"><h2>Team</h2><div class="links" id="team"></div></section>
+        <section>
+          <h2>Share your ideas</h2>
+          <p>Want to suggest something for my content? Head to the <a href="#ideas" style="color:var(--edge);font-weight:700">Ideas</a> tab.</p>
+        </section>
+      </div>
+      <aside id="widgetBox">
+        <section>
+          <h2>Live on Discord</h2>
+          <iframe id="discordWidget" title="Discord server widget" width="350" height="500" frameborder="0"
+            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+        </section>
+      </aside>
+    </div>
   </div>
 </div>
 
@@ -223,6 +242,7 @@
     instagram: '<rect x="3" y="3" width="18" height="18" rx="5.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>',
     discord: '<path d="M5.2 6.2C7 5 9.3 4.4 12 4.4s5 .6 6.8 1.8c1.5 2.9 2.2 6.1 2 9.9-1.3 1-2.9 1.7-4.5 2.1l-1-1.6c.5-.2 1-.4 1.4-.7-2.6 1.1-5.6 1.1-8.2 0 .4.3.9.5 1.4.7l-1 1.6c-1.6-.4-3.2-1.1-4.5-2.1-.2-3.8.5-7 2-9.9z" fill="currentColor"/><circle cx="9" cy="12" r="1.6" fill="var(--ink)"/><circle cx="15" cy="12" r="1.6" fill="var(--ink)"/>',
     curseforge: '<path d="M3 5h18l-2.2 3.2h-4.1c-.4 1.3-1.3 2.3-2.7 3 1.2.5 2.1 1.3 2.6 2.6l1.2 3.2H19V19H5v-2h2.7l1.2-3.2c.5-1.3 1.4-2.1 2.6-2.6-1.4-.7-2.3-1.7-2.7-3H5z" fill="currentColor"/>',
+    reddit: '<ellipse cx="12" cy="14" rx="8" ry="6" fill="currentColor"/><circle cx="18.6" cy="9.2" r="2" fill="currentColor"/><circle cx="5.4" cy="9.2" r="2" fill="currentColor"/><circle cx="9" cy="13.4" r="1.3" fill="var(--ink)"/><circle cx="15" cy="13.4" r="1.3" fill="var(--ink)"/><path d="M12 8l1.2-4 4 1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M9.5 16.4c1.4 1 3.6 1 5 0" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round"/>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
   };
   function icon(name) {
@@ -387,10 +407,33 @@
 
   // ---------- Community ----------
   $("communityText").textContent = SITE.communityText;
-  const d = $("discordBtn");
-  d.appendChild(icon("discord"));
-  d.appendChild(document.createTextNode("Join the Discord"));
-  d.href = SITE.discordInvite; openNew(d, SITE.discordInvite);
+  function commBtn(text, url, ic) {
+    const a = el("a", { class: "btn", href: url });
+    a.appendChild(icon(ic));
+    a.appendChild(document.createTextNode(text));
+    openNew(a, url);
+    $("communityButtons").appendChild(a);
+  }
+  commBtn("Join the Discord", SITE.discordInvite, "discord");
+  if (SITE.redditUrl) commBtn("Open the subreddit", SITE.redditUrl, "reddit");
+
+  // Team (owner / admin / mod)
+  const team = SITE.team || [];
+  if (!team.length) $("teamSec").remove();
+  team.forEach(m => {
+    const row = el("div", { class: "link" });
+    row.appendChild(el("b", {}, m.name));
+    row.appendChild(el("span", {}, m.role));
+    $("team").appendChild(row);
+  });
+
+  // Discord live widget (server ID chahiye, aur Discord me Widget on hona chahiye)
+  if (SITE.discordServerId) {
+    $("discordWidget").src = "https://discord.com/widget?id=" + encodeURIComponent(SITE.discordServerId) + "&theme=dark";
+  } else {
+    $("widgetBox").remove();
+    $("commGrid").style.gridTemplateColumns = "1fr";
+  }
 
   // ---------- Ideas (giscus, tab khulne pe hi load hota hai) ----------
   $("ideasIntro").textContent = SITE.ideasIntro;
