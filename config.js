@@ -8,7 +8,7 @@
 const SITE = {
   // --- Basic ---
   name: "BladeLow",
-  pageTitle: "BladeLow | Minecraft addons, AI and more",
+  pageTitle: "BladeLow | Minecraft addon dev",
   tagline: "Minecraft Bedrock add-on dev",
 
   // Profile picture (file ka naam, index.html ke saath same folder me honi chahiye). Khali "" = hata dega.
@@ -32,8 +32,8 @@ const SITE = {
 
   // --- About section (har item = ek paragraph) ---
   about: [
-    "I'm Sujay, online as BladeLow. I like building things, not just watching them. Minecraft Bedrock addons, AI tools, Discord bots and desktop apps are my main projects.",
-    "This site has all my links, new projects and upcoming content. You can also share your own ideas in the community."
+    "Hey, I'm Sujay, also known as BladeLow! I'm a student, content creator, and tech enthusiast who loves Minecraft, coding, game development, and video editing. I enjoy experimenting with new ideas and turning my creativity into something unique.",
+    ""
   ],
 
   // --- Social links (naya add karna ho to ek { } block copy karke paste kar) ---
