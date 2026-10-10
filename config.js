@@ -9,28 +9,58 @@ const SITE = {
   // --- Basic ---
   name: "BladeLow",
   pageTitle: "BladeLow | Minecraft addons, AI and more",
-  tagline: "Minecraft addons, AI projects and experiments. Everything I build lives here.",
-  accent: "#5ce1e6", // site ka main color (blade ki chamak). Koi bhi hex color daal sakta hai
+  tagline: "Minecraft addons, AI projects and experiments. Subscribe for an R.I.P. Creeper.",
 
-  // --- Hero ke neeche ke 2 bade buttons ---
+  // Profile picture (file ka naam, index.html ke saath same folder me honi chahiye). Khali "" = hata dega.
+  avatar: "pfp.jpg",
+
+  // --- Theme colors (apne channel ke colors yahan daal, hex format me) ---
+  theme: {
+    accent: "#57d13d",  // creeper green: buttons, lines, highlights
+    muted: "#9db89a",   // halka text aur borders
+    bg: "#0c130e",      // page ka background
+    panel: "#15201a",   // cards ka background
+    text: "#eef5ec"     // normal text
+  },
+
+  // --- Hero ke neeche ke bade buttons ---
+  // icon options: "youtube", "instagram", "discord", "curseforge", "link"
   heroButtons: [
-    { text: "Join the Discord", url: "https://discord.gg/XcUkm6mMEm" },
-    { text: "Watch on YouTube", url: "https://youtube.com/@BladeLow" }
+    { text: "Join the Discord", url: "#", icon: "discord" },
+    { text: "Watch on YouTube", url: "https://www.youtube.com/@BladeLow", icon: "youtube" }
   ],
 
   // --- About section (har item = ek paragraph) ---
   about: [
     "I'm Sujay, online as BladeLow. I like building things, not just watching them. Minecraft Bedrock addons, AI tools, Discord bots and desktop apps are my main projects.",
-    "This site has all my links, new projects and upcoming content. You can also share your own ideas in the community below."
+    "This site has all my links, new projects and upcoming content. You can also share your own ideas in the community."
   ],
 
   // --- Social links (naya add karna ho to ek { } block copy karke paste kar) ---
   socials: [
-    { name: "YouTube", url: "https://youtube.com/@BladeLow", note: "Videos, edits and tutorials" },
-    { name: "Instagram", url: "https://www.instagram.com/_bladelow_/", note: "Updates and reels" },
-    { name: "Discord", url: "https://discord.gg/XcUkm6mMEm", note: "Live chat community" },
-    { name: "CurseForge", url: "www.curseforge.com/members/bladelow/", note: "Download my addons" }
+    { name: "YouTube", url: "https://www.youtube.com/@BladeLow", note: "Videos, edits and tutorials", icon: "youtube" },
+    { name: "Instagram", url: "#", note: "Updates and reels", icon: "instagram" },
+    { name: "Discord", url: "#", note: "Live chat community", icon: "discord" },
+    { name: "CurseForge", url: "#", note: "Download my addons", icon: "curseforge" }
   ],
+
+  // --- Stats (Home page pe numbers) ---
+  stats: {
+    // Manual numbers: auto-fetch fail ho ya setup na ho to ye dikhenge. Khali "" = chhup jayega.
+    subscribers: "734",   // abhi ka number, kabhi kabhi khud update kar dena
+    discordMembers: "",
+
+    // Subscriber goal: progress bar dikhayega (jaise "Road to 1K"). Nahi chahiye to 0 ya "" kar de.
+    goal: 1000,
+
+    // YouTube auto subscribers (optional): Google Cloud Console me free "YouTube Data API v3" key bana.
+    // Key ko "HTTP referrers" se restrict kar de: https://tumharausername.github.io/*
+    youtubeApiKey: "",
+
+    // Discord auto members (optional): invite link ka last part. Example: discord.gg/abc123 -> "abc123"
+    // Invite "Never expire" wala hona chahiye.
+    discordInviteCode: ""
+  },
 
   // --- Addons / projects (CurseForge links yahan) ---
   addons: [
@@ -50,20 +80,23 @@ const SITE = {
   ],
 
   // --- Latest YouTube video (apne aap update hota hai) ---
-  // Channel ID kaise nikaale: YouTube Studio > Settings > Channel > Advanced settings.
-  // "UC" se shuru hota hai. Khali chhodega to ye section chhup jayega.
+  // Channel ID: YouTube Studio > Settings > Channel > Advanced settings. "UC" se shuru hota hai.
+  // Khali chhodega to ye section chhup jayega.
   youtubeChannelId: "UCb7oD9VTPrQcb0mCj5MJHNA",
 
-  // --- Community ---
-  discordInvite: "https://discord.gg/XcUkm6mMEm",
+  // --- Community tab ---
+  discordInvite: "#",
+  communityText: "Chat with other creators, get updates first and hang out on Discord.",
 
-  // Giscus = free Reddit jaisa discussion (GitHub Discussions pe chalta hai).
-  // Setup: https://giscus.app pe jaa, apna repo daal, jo 4 values mile wo yahan paste kar.
-  // Khali chhodega to community box me setup ka message dikhega.
+  // --- Ideas tab (Reddit jaisa discussion, GitHub Discussions pe chalta hai) ---
+  ideasIntro: "Got an idea for my next video, addon or project? Post it here and discuss it with others. You need a free GitHub account to post.",
+
+  // Giscus setup: https://giscus.app pe jaa, apna repo daal, jo 4 values mile wo yahan paste kar.
+  // Khali chhodega to Ideas tab me setup ka message dikhega.
   giscus: {
-    repo: "",       // example: "tumharaUsername/tumhara-repo"
+    repo: "",       // example: "sujaydhara654-jpg/sujaydhara654-jpg.github.io"
     repoId: "",
-    category: "",   // example: "Announcements" ya "General"
+    category: "",   // example: "Ideas"
     categoryId: ""
   },
 
