@@ -80,7 +80,15 @@ team: [
        
       name: "Better Transport",
       desc: "Better Transport allows players to pick up and carry mobs using a smooth and simple system.",
-      url: "https://www.curseforge.com/minecraft-bedrock/addons/better-transport"
+      url: "https://www.curseforge.com/minecraft-bedrock/addons/better-transport",
+       
+      name: "More logs add-on",
+      desc: "More real trees",
+      url: "https://www.curseforge.com/minecraft-bedrock/addons/more-logs-add-on",
+       
+      name: "Block of sky for bedrock",
+      desc: "This add-on adds two new blocks called block of sky and block of sun",
+      url: "https://www.curseforge.com/minecraft-bedrock/addons/block-of-sky-for-bedrock"
     }
     // Naya addon: upar wale block ke baad comma laga ke ek aur { name:"", desc:"", url:"" } daal de
   ],
