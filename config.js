@@ -73,12 +73,13 @@ team: [
       name: "BytePlayer",
       desc: "BytePlayer is a Minecraft Bedrock addon that simulates the experience of being one block tall with a lowered first-person camera, multiple camera modes, and reduced jump height, creating a fresh and immersive survival experience.",
       url: "https://www.curseforge.com/minecraft-bedrock/addons/byteplayer",
-       {
+    },
+    {
       name: "Better Transport",
       desc: "Better Transport allows players to pick up and carry mobs using a smooth and simple system.",
       url: "https://www.curseforge.com/minecraft-bedrock/addons/better-transport",
     },
-   {
+    {
       name: "More logs add-on",
       desc: "More real trees",
       url: "https://www.curseforge.com/minecraft-bedrock/addons/more-logs-add-on",
@@ -92,7 +93,7 @@ team: [
       name: "Better Flight System",
       desc: "This addon adds a smooth flight system with tilt camera, speed-based FOV, and immersive flying experience using elytra. Inspired by barrel roll mechanics.",
       url: "https://www.curseforge.com/minecraft-bedrock/addons/better-flight-system",
-     }
+    }
     // Naya addon: upar wale block ke baad comma laga ke ek aur { name:"", desc:"", url:"" } daal de
   ],
 
