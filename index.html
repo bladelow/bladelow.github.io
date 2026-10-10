@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BladeLow</title>
+<style>
+  /* Colors yahan hai. Accent color config.js se aata hai. */
+  :root {
+    --ink: #10162b;
+    --ink2: #18203d;
+    --steel: #8fa3c4;
+    --ice: #e8eef9;
+    --edge: #5ce1e6;
+    --line: #2a3558;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--ice);
+    font: 17px/1.65 "Segoe UI", system-ui, Arial, sans-serif;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--edge); outline-offset: 3px; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    min-height: 92vh;
+    padding: 12vh 6vw 8vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  .slash { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .slash polygon { fill: var(--ink2); }
+  .slash line {
+    stroke: var(--edge);
+    stroke-width: 0.5;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 160;
+    stroke-dashoffset: 160;
+    animation: cut 0.9s 0.2s cubic-bezier(.7,0,.2,1) forwards;
+  }
+  @keyframes cut { to { stroke-dashoffset: 0; } }
+  .hero > *:not(.slash) { position: relative; }
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(3.4rem, 14vw, 9rem);
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    transform: skewX(-6deg);
+    transform-origin: left bottom;
+  }
+  .hero p.tag { max-width: 34ch; margin: 1.5rem 0 2rem; font-size: 1.2rem; color: var(--steel); }
+  .btns { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+  .btn {
+    display: inline-block;
+    padding: 0.75rem 1.4rem;
+    border: 2px solid var(--edge);
+    color: var(--ice);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn:first-child { background: var(--edge); color: var(--ink); }
+  .btn:hover { background: var(--ice); border-color: var(--ice); color: var(--ink); }
+
+  /* ---------- Sections ---------- */
+  main { max-width: 760px; margin: 0 auto; padding: 0 6vw; }
+  section { padding: 4.5rem 0 0; }
+  h2 { margin: 0 0 1.2rem; font-size: 1.9rem; letter-spacing: -0.01em; }
+  h2::after { content: ""; display: block; width: 3rem; height: 3px; background: var(--edge); margin-top: 0.5rem; }
+  p { margin: 0 0 1rem; max-width: 62ch; }
+
+  .links { display: grid; gap: 0.7rem; }
+  .link {
+    display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    padding: 0.9rem 1.1rem;
+    background: var(--ink2);
+    border-left: 4px solid var(--steel);
+    text-decoration: none;
+    transition: border-color 0.15s;
+  }
+  .link:hover { border-color: var(--edge); }
+  .link b { font-size: 1.05rem; }
+  .link span { color: var(--steel); }
+
+  .row { padding: 0.2rem 0 0.2rem 1.1rem; border-left: 3px solid var(--edge); margin-bottom: 1.6rem; }
+  .row h3 { margin: 0 0 0.3rem; font-size: 1.2rem; }
+  .row p { color: var(--steel); margin-bottom: 0.6rem; }
+  .row a { color: var(--edge); font-weight: 700; }
+  .status { display: inline-block; margin-left: 0.6rem; padding: 0 0.6rem; border: 1px solid var(--steel); color: var(--steel); font-size: 0.8rem; font-weight: 400; vertical-align: middle; }
+
+  .video { position: relative; aspect-ratio: 16 / 9; background: #000; }
+  .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+  .note { padding: 1rem 1.2rem; background: var(--ink2); border: 1px dashed var(--steel); color: var(--steel); }
+  #comments { margin-top: 1.5rem; }
+
+  footer { margin-top: 6rem; padding: 2rem 6vw; border-top: 1px solid var(--line); color: var(--steel); text-align: center; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slash line { animation: none; stroke-dashoffset: 0; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <svg class="slash" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <polygon points="0,100 100,18 100,100"></polygon>
+    <line x1="0" y1="100" x2="100" y2="18"></line>
+  </svg>
+  <h1 id="siteName"></h1>
+  <p class="tag" id="tagline"></p>
+  <div class="btns" id="heroButtons"></div>
+</header>
+
+<main>
+  <section id="aboutSec"><h2>About</h2><div id="about"></div></section>
+  <section id="socialSec"><h2>Links</h2><div class="links" id="socials"></div></section>
+  <section id="addonSec"><h2>Addons and projects</h2><div id="addons"></div></section>
+  <section id="upcomingSec"><h2>Upcoming content</h2><div id="upcoming"></div></section>
+  <section id="videoSec"><h2>Latest video</h2><div class="video" id="video"></div></section>
+  <section id="communitySec">
+    <h2>Community</h2>
+    <p>Share your ideas, discuss my content, or show off your own work.</p>
+    <div class="btns"><a class="btn" id="discordBtn" href="#">Join the Discord</a></div>
+    <div id="comments"></div>
+  </section>
+</main>
+
+<footer id="footer"></footer>
+
+<script src="config.js"></script>
+<script>
+  // Ye code sirf config.js ka data page pe lagata hai. Isse chhedne ki zarurat nahi.
+  function el(tag, attrs, text) {
+    const e = document.createElement(tag);
+    for (const k in (attrs || {})) e.setAttribute(k, attrs[k]);
+    if (text) e.textContent = text;
+    return e;
+  }
+  const isExternal = u => u && u !== "#";
+  function openNew(a, url) {
+    if (isExternal(url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+  }
+  const $ = id => document.getElementById(id);
+
+  document.documentElement.style.setProperty("--edge", SITE.accent);
+  document.title = SITE.pageTitle || SITE.name;
+  $("siteName").textContent = SITE.name;
+  $("tagline").textContent = SITE.tagline;
+  $("footer").textContent = SITE.footer;
+
+  SITE.heroButtons.forEach(b => {
+    const a = el("a", { class: "btn", href: b.url }, b.text);
+    openNew(a, b.url); $("heroButtons").appendChild(a);
+  });
+
+  SITE.about.forEach(t => $("about").appendChild(el("p", {}, t)));
+
+  SITE.socials.forEach(s => {
+    const a = el("a", { class: "link", href: s.url });
+    a.appendChild(el("b", {}, s.name));
+    a.appendChild(el("span", {}, s.note || ""));
+    openNew(a, s.url); $("socials").appendChild(a);
+  });
+
+  if (!SITE.addons.length) $("addonSec").remove();
+  SITE.addons.forEach(x => {
+    const r = el("div", { class: "row" });
+    r.appendChild(el("h3", {}, x.name));
+    r.appendChild(el("p", {}, x.desc));
+    const a = el("a", { href: x.url }, "View on CurseForge");
+    openNew(a, x.url); r.appendChild(a);
+    $("addons").appendChild(r);
+  });
+
+  if (!SITE.upcoming.length) $("upcomingSec").remove();
+  SITE.upcoming.forEach(x => {
+    const r = el("div", { class: "row" });
+    const h = el("h3", {}, x.title);
+    h.appendChild(el("span", { class: "status" }, x.status));
+    r.appendChild(h);
+    r.appendChild(el("p", {}, x.desc));
+    $("upcoming").appendChild(r);
+  });
+
+  // Latest video: channel ID ke "UC" ko "UU" bana ke uploads playlist embed hoti hai
+  const cid = SITE.youtubeChannelId;
+  if (cid && cid.indexOf("UC") === 0) {
+    const f = el("iframe", {
+      src: "https://www.youtube.com/embed/videoseries?list=UU" + cid.slice(2),
+      title: "Latest video",
+      loading: "lazy",
+      allowfullscreen: ""
+    });
+    $("video").appendChild(f);
+  } else {
+    $("videoSec").remove();
+  }
+
+  const d = $("discordBtn");
+  d.href = SITE.discordInvite; openNew(d, SITE.discordInvite);
+
+  const g = SITE.giscus;
+  if (g.repo && g.repoId && g.category && g.categoryId) {
+    const s = el("script", {
+      src: "https://giscus.app/client.js",
+      "data-repo": g.repo, "data-repo-id": g.repoId,
+      "data-category": g.category, "data-category-id": g.categoryId,
+      "data-mapping": "pathname", "data-reactions-enabled": "1",
+      "data-input-position": "top", "data-theme": "dark", "data-lang": "en",
+      crossorigin: "anonymous"
+    });
+    s.async = true;
+    $("comments").appendChild(s);
+  } else {
+    $("comments").appendChild(el("div", { class: "note" },
+      "The discussion box isn't set up yet. Add the 4 giscus values in config.js and comments will appear here."));
+  }
+</script>
+</body>
+</html>
