@@ -70,9 +70,9 @@ team: [
   // --- Addons / projects (CurseForge links yahan) ---
   addons: [
     {
-      name: "Samurai Blades",
-      desc: "A samurai-themed Minecraft Bedrock addon. A tameable, rideable samurai dragon is planned.",
-      url: "#"
+      name: "Better Flight System",
+      desc: "This addon adds a smooth flight system with tilt camera, speed-based FOV, and immersive flying experience using elytra. Inspired by barrel roll mechanics.",
+      url: "https://www.curseforge.com/minecraft-bedrock/addons/better-flight-system"
     }
     // Naya addon: upar wale block ke baad comma laga ke ek aur { name:"", desc:"", url:"" } daal de
   ],
@@ -80,8 +80,8 @@ team: [
   // --- Upcoming content plans ---
   // status me kuch bhi likh sakta hai: "Planning", "In progress", "Done"
   upcoming: [
-    { title: "Video essay on perfection", status: "Planning", desc: "A 4-5 minute philosophical video with narration over Minecraft gameplay." },
-    { title: "New Minecraft addon", status: "In progress", desc: "Lag-free and built around an original idea." }
+    { title: "", status: "", desc: "" },
+    { title: "n", status: "", desc: "" }
   ],
 
   // --- Latest YouTube video (apne aap update hota hai) ---
