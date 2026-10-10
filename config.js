@@ -59,7 +59,7 @@ const SITE = {
 
     // Discord auto members (optional): invite link ka last part. Example: discord.gg/abc123 -> "abc123"
     // Invite "Never expire" wala hona chahiye.
-    discordInviteCode: ""
+    discordInviteCode: "XcUkm6mMEm"
   },
 
   // --- Addons / projects (CurseForge links yahan) ---
@@ -85,7 +85,7 @@ const SITE = {
   youtubeChannelId: "UCb7oD9VTPrQcb0mCj5MJHNA",
 
   // --- Community tab ---
-  discordInvite: "#",
+  discordInvite: "https://discord.gg/XcUkm6mMEm",
   communityText: "Chat with other creators, get updates first and hang out on Discord.",
 
   // --- Ideas tab (Reddit jaisa discussion, GitHub Discussions pe chalta hai) ---
