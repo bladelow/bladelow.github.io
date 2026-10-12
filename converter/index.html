@@ -56,9 +56,10 @@
 
 <div class="wrap">
   <h1>Structure Converter</h1>
-  <p>Bedrock <code>.mcstructure</code> files ko addon ke liye <code>.js</code> me badlo. Sab kuch tumhare browser me hota hai, koi file upload nahi hoti.</p>
+  <p>Convert Bedrock <code>.mcstructure</code> files into addon-ready <code>.js</code> modules. Everything runs locally in your browser, and no files are ever uploaded.</p>
+  <p>Place the generated files in your addon's <code>scripts/structures/</code> folder.</p>
 
-  <div id="drop"><b>Files yahan drop karo</b> ya click karke chuno
+  <div id="drop"><b>Drop your files here</b> or click to browse
     <input id="file" type="file" accept=".mcstructure" multiple hidden>
   </div>
   <div id="out"></div>
@@ -71,7 +72,7 @@
 <script>
   const $ = id => document.getElementById(id);
 
-  // ---------- Site ka theme aur branding (config.js se) ----------
+  // ---------- Site theme and branding (loaded from config.js) ----------
   if (typeof SITE !== "undefined") {
     const r = document.documentElement.style, T = SITE.theme || {};
     if (T.accent) r.setProperty("--edge", T.accent);
@@ -87,7 +88,7 @@
     $("brandImg").remove();
   }
 
-  // ---------- NBT reader ----------
+  // ---------- NBT reader (Bedrock uses little-endian NBT) ----------
   class Byte { constructor(v) { this.v = v; } }
 
   function readNBT(buf) {
@@ -112,10 +113,11 @@
       }
     }
     i++;     // root tag type
-    str();   // root name
+    str();   // root tag name
     return payload(10);
   }
 
+  // ---------- Structure conversion ----------
   function convert(buf) {
     const root = readNBT(buf);
     const st = root.structure;
@@ -157,7 +159,7 @@
         if (!names.includes(id)) names.push(id);
       } catch (e) {
         row.className = "row err";
-        row.textContent = f.name + ": convert nahi hui (" + e.message + ")";
+        row.textContent = f.name + ": conversion failed (" + e.message + ")";
       }
       out.appendChild(row);
     }
