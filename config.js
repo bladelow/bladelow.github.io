@@ -36,6 +36,11 @@ const SITE = {
     ""
   ],
 
+     // --- Extra nav links (alag page ya bahar ka link) ---
+  navLinks: [
+    { text: "Converter", url: "converter/" }
+  ],
+
   // --- Social links (naya add karna ho to ek { } block copy karke paste kar) ---
   socials: [
     { name: "YouTube", url: "https://www.youtube.com/@BladeLow", note: "Videos, edits and tutorials", icon: "youtube" },
