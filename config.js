@@ -38,8 +38,11 @@ const SITE = {
 
      // --- Extra nav links (alag page ya bahar ka link) ---
   navLinks: [
-    { text: "Converter", url: "converter/" }
+    { text: "Converter", url: "converter/" },
+    { text: "Ghost generator", url: "converter/ghost.html" }
   ],
+
+
 
   // --- Social links (naya add karna ho to ek { } block copy karke paste kar) ---
   socials: [
