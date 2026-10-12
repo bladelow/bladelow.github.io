@@ -40,7 +40,13 @@
   .brand img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
   .brand span { display: inline-block; transform: skewX(-6deg); }
   .tabs { display: flex; flex-wrap: wrap; gap: 0.2rem; }
- 
+  .tabs a {
+    padding: 0.45rem 0.9rem; text-decoration: none; color: var(--steel); font-weight: 600;
+    border-bottom: 3px solid transparent;
+  }
+  .tabs a:hover { color: var(--ice); }
+  .tabs a[aria-current="page"] { color: var(--ice); border-color: var(--edge); }
+
   /* ---------- Hero ---------- */
   .hero {
     position: relative; min-height: calc(100vh - 62px); min-height: calc(100svh - 62px);
