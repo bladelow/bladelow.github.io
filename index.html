@@ -267,6 +267,11 @@
   $("siteName").textContent = SITE.name;
   $("tagline").textContent = SITE.tagline;
   $("footer").textContent = SITE.footer;
+    (SITE.navLinks || []).forEach(l => {
+    const a = el("a", { href: l.url }, l.text);
+    if (/^https?:/.test(l.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+    $("tabs").appendChild(a);
+  });
   if (SITE.avatar) {
     $("brandImg").src = SITE.avatar;
     $("heroImg").src = SITE.avatar;
