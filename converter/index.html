@@ -1,1 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCStructure Converter</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#14161a;color:#e6e6e6;max-width:640px;margin:40px auto;padding:0 16px}
+  h1{font-size:1.5rem}
+  #drop{border:2px dashed #4a5160;border-radius:12px;padding:40px;text-align:center;cursor:pointer}
+  #drop.over{border-color:#5ec26a;background:#1c2420}
+  .row{display:flex;justify-content:space-between;align-items:center;background:#1e2127;border-radius:8px;padding:10px 14px;margin-top:10px}
+  a.btn,button{background:#5ec26a;color:#0b1a0e;border:0;border-radius:6px;padding:8px 14px;font-weight:600;cursor:pointer;text-decoration:none}
+  .err{color:#ff7b7b}
+  small{color:#9aa3b2}
+</style>
+</head>
+<body>
+<h1>MCStructure → JS Converter</h1>
+<p><small>Bedrock <code>.mcstructure</code> files ko addon-ready <code>.js</code> me badlo. Sab kuch tumhare browser me hota hai, koi upload nahi.</small></p>
 
+<div id="drop">Files yahan drop karo ya click karo<input id="file" type="file" accept=".mcstructure" multiple hidden></div>
+<div id="out"></div>
+<div id="idx" style="margin-top:16px"></div>
+
+<script>
+class Byte { constructor(v){ this.v = v; } }
+
+function readNBT(buf) {
+  const dv = new DataView(buf);
+  const u8 = new Uint8Array(buf);
+  let i = 0;
+  const dec = new TextDecoder();
+  const str = () => { const n = dv.getUint16(i, true); i += 2; const s = dec.decode(u8.subarray(i, i + n)); i += n; return s; };
+  function payload(t) {
+    switch (t) {
+      case 1: return new Byte(dv.getInt8(i++));
+      case 2: { const v = dv.getInt16(i, true); i += 2; return v; }
+      case 3: { const v = dv.getInt32(i, true); i += 4; return v; }
+      case 4: { const v = Number(dv.getBigInt64(i, true)); i += 8; return v; }
+      case 5: { const v = dv.getFloat32(i, true); i += 4; return v; }
+      case 6: { const v = dv.getFloat64(i, true); i += 8; return v; }
+      case 7: { const n = dv.getInt32(i, true); i += 4; const v = Array.from(u8.subarray(i, i + n)); i += n; return v; }
+      case 8: return str();
+      case 9: { const et = u8[i++]; const n = dv.getInt32(i, true); i += 4; const a = []; for (let k = 0; k < n; k++) a.push(payload(et)); return a; }
+      case 10: { const d = {}; while (true) { const tt = u8[i++]; if (tt === 0) return d; const name = str(); d[name] = payload(tt); } }
+      case 11: { const n = dv.getInt32(i, true); i += 4; const a = []; for (let k = 0; k < n; k++) { a.push(dv.getInt32(i, true)); i += 4; } return a; }
+      case 12: { const n = dv.getInt32(i, true); i += 4; const a = []; for (let k = 0; k < n; k++) { a.push(Number(dv.getBigInt64(i, true))); i += 8; } return a; }
+      default: throw new Error("Unknown NBT tag " + t);
+    }
+  }
+  i++;      // root tag type
+  str();    // root name
+  return payload(10);
+}
+
+function convert(buf) {
+  const root = readNBT(buf);
+  const st = root.structure;
+  const palette = st.palette.default.block_palette.map(p => {
+    const states = {};
+    for (const [k, v] of Object.entries(p.states || {})) states[k] = v instanceof Byte ? !!v.v : v;
+    return { name: p.name, states };
+  });
+  return { size: root.size, palette, blocks: st.block_indices[0] };
+}
+
+const ident = n => { let s = n.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_]/g, "_"); return /^\d/.test(s) ? "s_" + s : s; };
+
+const names = [];
+const out = document.getElementById("out");
+const idx = document.getElementById("idx");
+
+function download(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/javascript" }));
+  const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function handle(files) {
+  for (const f of files) {
+    const row = document.createElement("div"); row.className = "row";
+    try {
+      const data = convert(await f.arrayBuffer());
+      const id = ident(f.name);
+      const code = "export default " + JSON.stringify(data) + ";";
+      const [x, y, z] = data.size;
+      row.innerHTML = `<span>${f.name} <small>(${x}x${y}x${z})</small></span>`;
+      const b = document.createElement("button"); b.textContent = "Download " + id + ".js";
+      b.onclick = () => download(id + ".js", code);
+      row.appendChild(b);
+      if (!names.includes(id)) names.push(id);
+    } catch (e) {
+      row.innerHTML = `<span class="err">${f.name}: convert nahi hui (${e.message})</span>`;
+    }
+    out.appendChild(row);
+  }
+  if (names.length) {
+    idx.innerHTML = "";
+    const b = document.createElement("button");
+    b.textContent = "Download index.js (" + names.length + " structures)";
+    b.onclick = () => download("index.js",
+      names.map(n => `import ${n} from "./${n}.js";`).join("\n") +
+      `\n\nexport const structures = { ${names.join(", ")} };\n`);
+    idx.appendChild(b);
+  }
+}
+
+const drop = document.getElementById("drop"), input = document.getElementById("file");
+drop.onclick = () => input.click();
+input.onchange = () => handle(input.files);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); handle(e.dataTransfer.files); };
+</script>
+</body>
+</html>
