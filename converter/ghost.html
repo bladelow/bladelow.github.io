@@ -31,6 +31,7 @@
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.8rem; margin:1rem 0; }
   label { display:flex; flex-direction:column; gap:.25rem; color:var(--steel); font-size:.9rem; }
   label.check { flex-direction:row; align-items:center; gap:.5rem; }
+  select { background:var(--ink); color:var(--ice); border:1px solid var(--line); padding:.45rem .6rem; font:inherit; }
   input:not([type]) { background:var(--ink); color:var(--ice); border:1px solid var(--line); padding:.45rem .6rem; font:inherit; }
   .btnrow { display:flex; gap:.6rem; flex-wrap:wrap; margin:1rem 0 .4rem; }
   #problems { color:#ff9b9b; margin:.4rem 0; }
@@ -61,6 +62,9 @@
       <label>Min engine version<input id="s_engine" value="1.21.0"></label>
       <label>@minecraft/server<input id="s_server" value="2.0.0"></label>
       <label>@minecraft/server-ui<input id="s_ui" value="2.0.0"></label>
+      <label>Version format in manifest
+        <select id="s_fmt"><option value="array">Numbers [1, 0, 0]</option><option value="text">Text "1.0.0"</option></select>
+      </label>
     </div>
     <label class="check"><input type="checkbox" id="s_dep" checked> Behavior pack requires the resource pack (turns it on automatically)</label>
     <div class="btnrow">
@@ -351,26 +355,31 @@
     if (!engine) errors.push("Min engine version must look like 1.21.0");
     if (!server) errors.push("@minecraft/server version must look like 2.0.0 (or 2.1.0-beta)");
     if (!ui) errors.push("@minecraft/server-ui version must look like 2.0.0 (or 2.1.0-beta)");
-    return { errors, name, desc, ver, engine, server, ui, dep: $("s_dep").checked };
+    const asText = $("s_fmt").value === "text";
+    return { errors, name, desc, ver, engine, server, ui, dep: $("s_dep").checked, asText,
+      verText: $("s_ver").value.trim(), engineText: $("s_engine").value.trim() };
   }
 
   function makeManifests(S) {
+    // Some game versions are picky about how versions are written, so both styles are offered
+    const V = S.asText ? S.verText : S.ver;
+    const E = S.asText ? S.engineText : S.engine;
     const rp = {
       format_version: 2,
-      header: { name: S.name + " RP", description: S.desc, uuid: UU.rp, version: S.ver, min_engine_version: S.engine },
-      modules: [{ type: "resources", uuid: UU.rpMod, version: S.ver }]
+      header: { name: S.name + " RP", description: S.desc, uuid: UU.rp, version: V, min_engine_version: E },
+      modules: [{ type: "resources", uuid: UU.rpMod, version: V }]
     };
     const deps = [
       { module_name: "@minecraft/server", version: S.server },
       { module_name: "@minecraft/server-ui", version: S.ui }
     ];
-    if (S.dep) deps.push({ uuid: UU.rp, version: S.ver });
+    if (S.dep) deps.push({ uuid: UU.rp, version: V });
     const bp = {
       format_version: 2,
-      header: { name: S.name, description: S.desc, uuid: UU.bp, version: S.ver, min_engine_version: S.engine },
+      header: { name: S.name, description: S.desc, uuid: UU.bp, version: V, min_engine_version: E },
       modules: [
-        { type: "data", uuid: UU.bpData, version: S.ver },
-        { type: "script", language: "javascript", uuid: UU.bpScript, version: S.ver, entry: "scripts/main.js" }
+        { type: "data", uuid: UU.bpData, version: V },
+        { type: "script", language: "javascript", uuid: UU.bpScript, version: V, entry: "scripts/main.js" }
       ],
       dependencies: deps
     };
@@ -477,7 +486,7 @@
   };
   $("clear").onclick = () => { items.length = 0; status.textContent = ""; render(); };
 
-  for (const id of ["s_name", "s_desc", "s_ver", "s_engine", "s_server", "s_ui", "s_dep"]) $(id).addEventListener("input", refreshPreview);
+  for (const id of ["s_name", "s_desc", "s_ver", "s_engine", "s_server", "s_ui", "s_dep", "s_fmt"]) $(id).addEventListener("input", refreshPreview);
   $("newuuid").onclick = () => { UU = makeUuids(true); refreshPreview(); };
   const copyText = async (btn, which) => {
     const S = readSettings(); if (S.errors.length) return;
