@@ -169,20 +169,31 @@
     return img;
   }
   // Texture file path for one face of a block, or null
+  // Used when blocks.json has no entry for a block (face -> terrain_texture key)
+  const FALLBACK = {
+    grass_block: { up: "grass_top", down: "dirt", side: "grass_side" },
+    grass: { up: "grass_top", down: "dirt", side: "grass_side" },
+    dirt: "dirt", stone: "stone", cobblestone: "cobblestone", sand: "sand"
+  };
+  function hexRgb(h) {
+    const m = /^#?([0-9a-f]{6})/i.exec(h || "");
+    return m ? [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4, 6), 16)] : null;
+  }
+  // Texture file path (and optional tint colour) for one face of a block, or null
   function texPath(name, dir) {
     if (!VAN.terrain) return null;
     const id = name.replace("minecraft:", "");
     const b = VAN.blocks && VAN.blocks[id];
-    let t = b && b.textures != null ? b.textures : id;
+    let t = b && b.textures != null ? b.textures : (FALLBACK[id] ?? id);
     let key;
     if (typeof t === "string") key = t;
     else if (dir === "up" || dir === "down") key = t[dir] ?? t.side ?? t.up;
     else key = t[dir] ?? t.side ?? t.up ?? Object.values(t)[0];
     const e = key && VAN.terrain[key];
-    let p = e && e.textures;
+    let p = e && e.textures, tint = null;
     if (Array.isArray(p)) p = p[0];
-    if (p && typeof p === "object") p = p.path;
-    return typeof p === "string" ? p : null;
+    if (p && typeof p === "object") { tint = hexRgb(p.tint_color); p = p.path; }
+    return typeof p === "string" ? { path: p, tint } : null;
   }
 
   // ---------- Flat colour fallback ----------
@@ -214,9 +225,9 @@
     // Which atlas cell each palette entry uses per direction
     const cells = new Map(), cellList = [];
     const cellFor = (name, dir) => {
-      const p = texPath(name, dir);
-      const key = p ? "t:" + p : "c:" + colorFor(name);
-      if (!cells.has(key)) { cells.set(key, cellList.length); cellList.push({ path: p, color: colorFor(name) }); }
+      const t = texPath(name, dir);
+      const key = t ? "t:" + t.path + "|" + (t.tint || "") : "c:" + colorFor(name);
+      if (!cells.has(key)) { cells.set(key, cellList.length); cellList.push({ path: t ? t.path : null, tint: t ? t.tint : null, color: colorFor(name), name }); }
       return cells.get(key);
     };
     const used = new Set();
@@ -235,19 +246,29 @@
     const cx = cv.getContext("2d", { willReadFrequently: true });
     cx.imageSmoothingEnabled = false;
     let textured = 0;
+    const flat = new Set();
     for (let c = 0; c < cellList.length; c++) {
       const ox = (c % 16) * 16, oy = Math.floor(c / 16) * 16, cell = cellList[c];
       const img = cell.path ? await loadImg(cell.path) : null;
+      let ok = false;
       if (img) {
         // animated textures are tall strips: draw the first frame only
         cx.drawImage(img, 0, 0, img.width, Math.min(img.height, img.width), ox, oy, 16, 16);
+        const chk = cx.getImageData(ox, oy, 16, 16).data;
+        for (let k = 3; k < chk.length; k += 4) if (chk[k] > 0) { ok = true; break; }
+      }
+      let tint = null;
+      if (ok) {
         textured++;
+        tint = cell.tint;
+        if (!tint && cell.path) for (const [re, rgb] of TINTS) if (re.test(cell.path)) tint = rgb;
       } else {
+        // texture missing or fully transparent: use a flat colour so the block still shows
+        cx.clearRect(ox, oy, 16, 16);
         cx.fillStyle = cell.color; cx.fillRect(ox, oy, 16, 16);
+        flat.add(cell.name.replace("minecraft:", ""));
       }
       const px = cx.getImageData(ox, oy, 16, 16), a = px.data;
-      let tint = null;
-      if (cell.path && img) for (const [re, rgb] of TINTS) if (re.test(cell.path)) tint = rgb;
       for (let k = 0; k < a.length; k += 4) {
         if (tint) { a[k] = a[k] * tint[0] / 255; a[k + 1] = a[k + 1] * tint[1] / 255; a[k + 2] = a[k + 2] * tint[2] / 255; }
         a[k + 3] = a[k + 3] * OPACITY;
@@ -298,7 +319,7 @@
       format_version: "1.10.0",
       "minecraft:client_entity": { description: {
         identifier: "ghost:" + id,
-        materials: { default: "entity_alphablend" },
+        materials: { default: "ghost_hologram" },
         textures: { default: "textures/ghost/" + id },
         geometry: { default: "geometry.ghost." + id },
         render_controllers: ["controller.render.ghost." + id]
@@ -316,7 +337,9 @@
         description: { identifier: "ghost:" + id, is_spawnable: false, is_summonable: true, is_experimental: false },
         component_groups: groups,
         components: {
-          "minecraft:collision_box": { width: 0.1, height: 0.1 },
+          "minecraft:collision_box": { width: 0, height: 0 },
+          "minecraft:damage_sensor": { triggers: [{ cause: "all", deals_damage: "no" }] },
+          "minecraft:knockback_resistance": { value: 1 },
           "minecraft:physics": { has_gravity: false, has_collision: false },
           "minecraft:pushable": { is_pushable: false, is_pushable_by_piston: false },
           "minecraft:persistent": {},
@@ -326,7 +349,7 @@
       }
     };
     const dataJs = "export default " + JSON.stringify({ size: [w, h, d], palette: pal.map(n => ({ name: n })), blocks: idx }) + ";";
-    return { id, png, geo, rc, clientEntity, serverEntity, dataJs, cubes, size: [w, h, d], textured, cells: cellList.length };
+    return { id, png, geo, rc, clientEntity, serverEntity, dataJs, cubes, size: [w, h, d], textured, cells: cellList.length, flat: [...flat] };
   }
 
   // ---------- Pack settings and manifests ----------
@@ -415,6 +438,9 @@
       bp.file(`entities/ghost_${b.id}.json`, JSON.stringify(b.serverEntity));
       bp.file(`scripts/structures/${b.id}.js`, b.dataJs);
     }
+    rp.file("materials/entity.material", JSON.stringify({
+      materials: { version: "1.0.0", "ghost_hologram:entity_alphablend": { "+states": ["DisableCulling"] } }
+    }));
     rp.file("manifest.json", JSON.stringify(M.rp, null, 2));
     bp.file("manifest.json", JSON.stringify(M.bp, null, 2));
     bp.file("scripts/main.js", runtime);
@@ -475,7 +501,9 @@
       const { blob, built } = await buildAddon(items, t => { status.textContent = t; });
       const tx = built.reduce((a, b) => a + b.textured, 0), all = built.reduce((a, b) => a + b.cells, 0);
       const cubes = built.reduce((a, b) => a + b.cubes, 0);
+      const flat = [...new Set(built.flatMap(b => b.flat))];
       status.textContent = `Done: ${cubes} cubes, ${tx}/${all} textures found` +
+        (flat.length ? ` | flat colour used for: ${flat.join(", ")}` : "") +
         (tx === 0 ? " (vanilla textures could not be loaded, flat colours used)" : "") +
         (cubes > 30000 ? ". Very large, may lag in game." : ".");
       download("BlueprintBuilder.mcaddon", blob);
