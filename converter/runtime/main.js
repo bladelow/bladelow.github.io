@@ -8,6 +8,16 @@ const WRONG_PARTICLE = "minecraft:villager_angry"; // marks wrongly placed block
 const WRONG_RADIUS = 7;
 const WRONG_MAX = 100;
 
+// ---------- Ghost rotation calibration ----------
+// The menu button "Fix ghost rotation" cycles through 8 orientations until the ghost matches your rotation
+let CAL = 0;
+try { const v = world.getDynamicProperty("bp_cal"); if (typeof v === "number") CAL = v % 8; } catch (e) { /* not available */ }
+function yawFor(rot) {
+  const off = (CAL % 4) * 90, sign = CAL < 4 ? 1 : -1;
+  const y = (((off + sign * rot * 90) % 360) + 360) % 360;
+  return y > 180 ? y - 360 : y;
+}
+
 // ---------- Per-player state ----------
 const state = new Map();
 function st(p) {
@@ -99,7 +109,7 @@ function updateGhost(p, s) {
   // The model is centred on the entity, so the entity sits in the middle of the footprint
   const pos = { x: s.anchor.x + fw / 2, y: s.anchor.y, z: s.anchor.z + fd / 2 };
   const dimId = p.dimension.id;
-  const sig = [s.name, pos.x, pos.y, pos.z, s.rot, s.layer, dimId].join("|");
+  const sig = [s.name, pos.x, pos.y, pos.z, s.rot, s.layer, dimId, CAL].join("|");
   if (ghostValid(s) && s.sig === sig) return;
 
   try {
@@ -110,8 +120,7 @@ function updateGhost(p, s) {
       s.ghostDim = dimId;
       s.layerSent = undefined;
     }
-    // Yaw 0/90/180/270 matches blueprint rotation 0/1/2/3
-    s.ghost.teleport(pos, { dimension: p.dimension, rotation: { x: 0, y: s.rot * 90 } });
+    s.ghost.teleport(pos, { dimension: p.dimension, rotation: { x: 0, y: yawFor(s.rot) } });
     if (s.layerSent !== s.layer) {
       s.ghost.triggerEvent(s.layer === null ? "ghost:layer_all" : "ghost:layer_" + s.layer);
       s.layerSent = s.layer;
@@ -120,6 +129,17 @@ function updateGhost(p, s) {
   } catch (e) {
     s.sig = null;
   }
+}
+
+function enforceYaw(s) {
+  if (!ghostValid(s)) return;
+  try {
+    const want = yawFor(s.rot);
+    const cur = s.ghost.getRotation().y;
+    let diff = Math.abs(want - cur) % 360;
+    if (diff > 180) diff = 360 - diff;
+    if (diff > 0.5) s.ghost.setRotation({ x: 0, y: want });
+  } catch (e) { /* ignore */ }
 }
 
 // Remove leftover ghosts from a previous session
@@ -153,8 +173,9 @@ system.runInterval(() => {
       }
     }
     updateGhost(p, s);
+    enforceYaw(s);
   }
-}, 3);
+}, 1);
 
 // ---------- Wrong-block markers ----------
 system.runInterval(() => {
@@ -230,31 +251,41 @@ function selectItem(p, container, itemId) {
   }
 }
 
-system.runInterval(() => {
-  for (const p of world.getAllPlayers()) {
-    const s = state.get(p.id);
-    if (!s || !s.name || !s.auto || !s.locked || !s.anchor) continue;
-    const hit = p.getBlockFromViewDirection({ maxDistance: 8 });
-    if (!hit) continue;
-    const t = targetPos(hit);
-    const name = blockAt(structures[s.name], s.rot, t.x - s.anchor.x, t.y - s.anchor.y, t.z - s.anchor.z);
-    if (!name) { p.onScreenDisplay.setActionBar("Nothing to place here"); continue; }
+function autoFill(p) {
+  const s = state.get(p.id);
+  if (!s || !s.name || !s.auto || !s.locked || !s.anchor) return;
+  const hit = p.getBlockFromViewDirection({ maxDistance: 8 });
+  if (!hit) return;
+  const t = targetPos(hit);
+  const name = blockAt(structures[s.name], s.rot, t.x - s.anchor.x, t.y - s.anchor.y, t.z - s.anchor.z);
+  if (!name) { p.onScreenDisplay.setActionBar("Nothing to place here"); return; }
 
-    const itemId = ITEM_MAP[name] ?? name;
-    if (!ItemTypes.get(itemId)) {
-      p.onScreenDisplay.setActionBar("Can't place (no item for " + short(name) + ")");
-      continue;
-    }
-    const container = p.getComponent("inventory").container;
-    const have = countItem(container, itemId);
-    p.onScreenDisplay.setActionBar("Need: " + short(itemId) + " (have " + have + ")");
-
-    const key = t.x + "," + t.y + "," + t.z;
-    if (key === s.lastKey) continue;
-    s.lastKey = key;
-    if (have > 0) selectItem(p, container, itemId);
+  const itemId = ITEM_MAP[name] ?? name;
+  if (!ItemTypes.get(itemId)) {
+    p.onScreenDisplay.setActionBar("Can't place (no item for " + short(name) + ")");
+    return;
   }
-}, 4);
+  const container = p.getComponent("inventory").container;
+  const have = countItem(container, itemId);
+  p.onScreenDisplay.setActionBar("Need: " + short(itemId) + " (have " + have + ")");
+
+  const key = t.x + "," + t.y + "," + t.z;
+  if (key === s.lastKey) return;
+  s.lastKey = key;
+  if (have > 0) selectItem(p, container, itemId);
+}
+
+// Every tick, plus immediately after each block is placed (so quick clicking keeps up)
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) autoFill(p);
+}, 1);
+
+world.afterEvents.playerPlaceBlock.subscribe((ev) => {
+  const p = ev.player;
+  const s = state.get(p.id);
+  if (s) s.lastKey = null;
+  system.run(() => autoFill(p));
+});
 
 // ---------- Menus ----------
 function chooseMenu(p) {
@@ -319,7 +350,7 @@ function mainMenu(p) {
   const layerTxt = s.layer === null ? "all" : (s.layer + 1) + " / " + h;
   new ActionFormData()
     .title("Blueprint Menu")
-    .body(`Structure: ${s.name ?? "none"}\nRotation: ${s.rot * 90}\nPosition: ${s.locked ? "locked" : "following"}\nLayer: ${layerTxt}\nAuto-fill: ${s.auto ? "on" : "off"}`)
+    .body(`Structure: ${s.name ?? "none"}\nRotation: ${s.rot * 90}\nPosition: ${s.locked ? "locked" : "following"}\nLayer: ${layerTxt}\nAuto-fill: ${s.auto ? "on" : "off"}\nGhost rotation fix: ${CAL + 1} / 8`)
     .button("Structure choose")
     .button("Material list")
     .button("Rotate 90")
@@ -329,6 +360,7 @@ function mainMenu(p) {
     .button("Layer up")
     .button("Layer down")
     .button("All layers")
+    .button("Fix ghost rotation")
     .show(p)
     .then((res) => {
       if (res.canceled) return;
@@ -347,6 +379,12 @@ function mainMenu(p) {
         case 6: changeLayer(p, 1); break;
         case 7: changeLayer(p, -1); break;
         case 8: s.layer = null; p.sendMessage("Showing all layers."); break;
+        case 9:
+          CAL = (CAL + 1) % 8;
+          try { world.setDynamicProperty("bp_cal", CAL); } catch (e) { /* not saved */ }
+          for (const st2 of state.values()) st2.sig = null;
+          p.sendMessage("Ghost rotation fix " + (CAL + 1) + " / 8. Rotate and compare with the real blocks; press again until they match.");
+          break;
       }
     });
 }
