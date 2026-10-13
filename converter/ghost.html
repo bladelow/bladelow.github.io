@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ghost Pack Generator</title>
+<title>Blueprint Addon Generator</title>
 <link rel="icon" href="../pfp.jpg">
 <style>
   :root { --ink:#0c130e; --ink2:#15201a; --steel:#9db89a; --ice:#eef5ec; --edge:#57d13d; --line:#243428; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--ink); color:var(--ice); font:17px/1.65 "Segoe UI",system-ui,Arial,sans-serif; }
   a { color: inherit; }
+  :focus-visible { outline:3px solid var(--edge); outline-offset:3px; }
   .wrap { max-width:860px; margin:0 auto; padding:3rem 6vw 1rem; }
   h1 { margin:0 0 1.2rem; font-size:2.2rem; font-weight:900; font-style:italic; letter-spacing:-.03em; }
   h1::after { content:""; display:block; width:3rem; height:3px; background:var(--edge); margin-top:.5rem; }
@@ -23,20 +24,29 @@
   .row.err { border-left-color:#ff6b6b; color:#ff9b9b; }
   button { padding:.55rem 1.1rem; border:2px solid var(--edge); background:var(--edge); color:var(--ink); font:inherit; font-weight:700; cursor:pointer; }
   button:hover { background:var(--ice); border-color:var(--ice); }
+  button.quiet { background:transparent; color:var(--ice); border-color:var(--line); }
+  button:disabled { opacity:.5; cursor:wait; }
+  #actions { margin-top:1.2rem; display:flex; gap:.7rem; flex-wrap:wrap; align-items:center; }
+  #status { color:var(--steel); }
   footer { margin-top:4rem; padding:2rem 6vw; border-top:1px solid var(--line); color:var(--steel); text-align:center; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <p><a href="./">&larr; Back to converter</a></p>
-  <h1>Ghost Pack Generator</h1>
-  <p>Turn a Bedrock <code>.mcstructure</code> into a <code>.mcaddon</code> that shows the structure as a translucent ghost model. Everything runs in your browser.</p>
-  <p>After importing, enable both packs in your world and run <code>/summon ghost:&lt;name&gt; ~ ~ ~</code>.</p>
+  <h1>Blueprint Addon Generator</h1>
+  <p>Drop one or more Bedrock <code>.mcstructure</code> files. You get a single <code>.mcaddon</code> with a textured ghost model of each structure and the build assistant script (menu, rotate, lock, layers, auto-fill). Everything runs in your browser.</p>
+  <p>Import the addon, enable both packs in your world, then hold a stick and right click.</p>
 
   <div id="drop"><b>Drop your files here</b> or click to browse
     <input id="file" type="file" accept=".mcstructure" multiple hidden>
   </div>
-  <div id="out"></div>
+  <div id="list"></div>
+  <div id="actions" hidden>
+    <button id="build">Build addon</button>
+    <button id="clear" class="quiet">Clear list</button>
+    <span id="status"></span>
+  </div>
 </div>
 <footer id="footer"></footer>
 
@@ -44,6 +54,21 @@
 <script src="../config.js"></script>
 <script>
   const $ = id => document.getElementById(id);
+
+  // ---------- Settings ----------
+  // Vanilla block data and textures (Mojang's public sample resource pack)
+  const SRC = "https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/";
+  const X_NEGATED = true;   // set to false if the ghost appears mirrored in game
+  const OPACITY = 0.7;      // ghost transparency
+  const TINTS = [           // biome-tinted textures get a fixed colour
+    [/grass_top|grass_carried|leaves|fern|vine|tallgrass|double_plant_grass/, [124, 189, 107]],
+    [/water/, [63, 118, 228]]
+  ];
+  // Fixed ids so re-importing the addon replaces the old one
+  const RP_UUID = "7c2e9a14-5b3d-4e68-9f01-a4d8c6b27e35", RP_MOD = "e1f4b8d2-96a7-4c3e-8b50-2d7a9c1f6e84";
+  const BP_UUID = "3a9d5c71-e284-4b6f-a1d9-8c0e7f52b463", BP_DATA = "b6d08e27-4f13-49a5-9c7e-1a5b3d8f2c90", BP_SCRIPT = "d4a71f93-0c6e-4852-b3a8-6e9f2d1c7b05";
+
+  // ---------- Theme from config.js ----------
   if (typeof SITE !== "undefined") {
     const r = document.documentElement.style, T = SITE.theme || {};
     if (T.accent) r.setProperty("--edge", T.accent);
@@ -55,25 +80,24 @@
   }
 
   // ---------- NBT reader (Bedrock little-endian) ----------
-  class Byte { constructor(v) { this.v = v; } }
   function readNBT(buf) {
     const dv = new DataView(buf), u8 = new Uint8Array(buf), dec = new TextDecoder();
     let i = 0;
     const str = () => { const n = dv.getUint16(i, true); i += 2; const s = dec.decode(u8.subarray(i, i + n)); i += n; return s; };
     function payload(t) {
       switch (t) {
-        case 1: return new Byte(dv.getInt8(i++));
+        case 1: i++; return 0;
         case 2: { const v = dv.getInt16(i, true); i += 2; return v; }
         case 3: { const v = dv.getInt32(i, true); i += 4; return v; }
         case 4: { const v = Number(dv.getBigInt64(i, true)); i += 8; return v; }
         case 5: { const v = dv.getFloat32(i, true); i += 4; return v; }
         case 6: { const v = dv.getFloat64(i, true); i += 8; return v; }
-        case 7: { const n = dv.getInt32(i, true); i += 4; const v = Array.from(u8.subarray(i, i + n)); i += n; return v; }
+        case 7: { const n = dv.getInt32(i, true); i += 4; i += n; return null; }
         case 8: return str();
         case 9: { const et = u8[i++]; const n = dv.getInt32(i, true); i += 4; const a = []; for (let k = 0; k < n; k++) a.push(payload(et)); return a; }
         case 10: { const d = {}; while (true) { const tt = u8[i++]; if (tt === 0) return d; const name = str(); d[name] = payload(tt); } }
         case 11: { const n = dv.getInt32(i, true); i += 4; const a = []; for (let k = 0; k < n; k++) { a.push(dv.getInt32(i, true)); i += 4; } return a; }
-        case 12: { const n = dv.getInt32(i, true); i += 4; const a = []; for (let k = 0; k < n; k++) { a.push(Number(dv.getBigInt64(i, true))); i += 8; } return a; }
+        case 12: { const n = dv.getInt32(i, true); i += 4; i += n * 8; return null; }
         default: throw new Error("Unknown NBT tag " + t);
       }
     }
@@ -89,7 +113,49 @@
     };
   }
 
-  // ---------- Colours (flat colour per block type) ----------
+  // ---------- Vanilla textures ----------
+  let VAN = null;
+  async function loadVanilla() {
+    if (VAN) return VAN;
+    VAN = { blocks: null, terrain: null, imgs: new Map() };
+    const getJson = async url => {
+      const text = await (await fetch(url)).text();
+      return JSON.parse(text.replace(/^\s*\/\/.*$/gm, ""));
+    };
+    try {
+      VAN.blocks = await getJson(SRC + "blocks.json");
+      VAN.terrain = (await getJson(SRC + "textures/terrain_texture.json")).texture_data;
+    } catch (e) { VAN.blocks = null; VAN.terrain = null; }
+    return VAN;
+  }
+  async function loadImg(path) {
+    if (VAN.imgs.has(path)) return VAN.imgs.get(path);
+    let img = null;
+    try {
+      const r = await fetch(SRC + path + ".png");
+      if (r.ok) img = await createImageBitmap(await r.blob());
+    } catch (e) { /* missing texture */ }
+    VAN.imgs.set(path, img);
+    return img;
+  }
+  // Texture file path for one face of a block, or null
+  function texPath(name, dir) {
+    if (!VAN.terrain) return null;
+    const id = name.replace("minecraft:", "");
+    const b = VAN.blocks && VAN.blocks[id];
+    let t = b && b.textures != null ? b.textures : id;
+    let key;
+    if (typeof t === "string") key = t;
+    else if (dir === "up" || dir === "down") key = t[dir] ?? t.side ?? t.up;
+    else key = t[dir] ?? t.side ?? t.up ?? Object.values(t)[0];
+    const e = key && VAN.terrain[key];
+    let p = e && e.textures;
+    if (Array.isArray(p)) p = p[0];
+    if (p && typeof p === "object") p = p.path;
+    return typeof p === "string" ? p : null;
+  }
+
+  // ---------- Flat colour fallback ----------
   const COLORS = [
     ["planks", "#b8945f"], ["log", "#6b5230"], ["leaves", "#3f7a2c"], ["grass", "#5d9b3a"],
     ["dirt", "#866043"], ["sand", "#dbcfa3"], ["glass", "#bfe3ec"], ["water", "#3b6fd4"],
@@ -105,61 +171,99 @@
   }
   const isAir = n => n === "minecraft:air" || n === "minecraft:structure_void";
 
-  // ---------- Pack builder ----------
-  const ident = n => (n.replace(/\.[^.]+$/, "").toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/^(\d)/, "s_$1"));
-  const uuid = () => crypto.randomUUID();
+  // ---------- Geometry and texture for one structure ----------
+  const DIRS = { east: [1, 0, 0], west: [-1, 0, 0], south: [0, 0, 1], north: [0, 0, -1], up: [0, 1, 0], down: [0, -1, 0] };
+  const modelFace = d => (X_NEGATED && (d === "east" || d === "west")) ? (d === "east" ? "west" : "east") : d;
+  const ident = n => n.replace(/\.[^.]+$/, "").toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/^(\d)/, "s_$1");
 
-  async function build(fileName, data) {
-    const id = ident(fileName);
-    const [w, h, d] = data.size;
-    const pal = data.palette, idx = data.blocks;
+  async function buildStructure(id, data) {
+    const [w, h, d] = data.size, pal = data.palette, idx = data.blocks;
     const at = (x, y, z) => (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d) ? -1 : idx[(x * h + y) * d + z];
     const solid = (x, y, z) => { const i = at(x, y, z); return i >= 0 && !isAir(pal[i]); };
 
-    // Texture: 16 columns, one pixel per palette entry
-    const rows = Math.max(1, Math.ceil(pal.length / 16));
-    const cv = document.createElement("canvas"); cv.width = 16; cv.height = rows;
-    const cx = cv.getContext("2d");
-    pal.forEach((n, i) => {
-      cx.fillStyle = colorFor(n);
-      cx.globalAlpha = 0.7;
-      cx.fillRect(i % 16, Math.floor(i / 16), 1, 1);
-    });
+    // Which atlas cell each palette entry uses per direction
+    const cells = new Map(), cellList = [];
+    const cellFor = (name, dir) => {
+      const p = texPath(name, dir);
+      const key = p ? "t:" + p : "c:" + colorFor(name);
+      if (!cells.has(key)) { cells.set(key, cellList.length); cellList.push({ path: p, color: colorFor(name) }); }
+      return cells.get(key);
+    };
+    const used = new Set();
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) for (let z = 0; z < d; z++) {
+      const i = at(x, y, z); if (i >= 0 && !isAir(pal[i])) used.add(i);
+    }
+    const palCells = {};
+    for (const i of used) {
+      palCells[i] = {};
+      for (const dir of Object.keys(DIRS)) palCells[i][dir] = cellFor(pal[i], dir);
+    }
+
+    // Atlas: 16 cells per row, 16 px each
+    const rows = Math.max(1, Math.ceil(cellList.length / 16));
+    const cv = document.createElement("canvas"); cv.width = 256; cv.height = rows * 16;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.imageSmoothingEnabled = false;
+    let textured = 0;
+    for (let c = 0; c < cellList.length; c++) {
+      const ox = (c % 16) * 16, oy = Math.floor(c / 16) * 16, cell = cellList[c];
+      const img = cell.path ? await loadImg(cell.path) : null;
+      if (img) {
+        // animated textures are tall strips: draw the first frame only
+        cx.drawImage(img, 0, 0, img.width, Math.min(img.height, img.width), ox, oy, 16, 16);
+        textured++;
+      } else {
+        cx.fillStyle = cell.color; cx.fillRect(ox, oy, 16, 16);
+      }
+      const px = cx.getImageData(ox, oy, 16, 16), a = px.data;
+      let tint = null;
+      if (cell.path && img) for (const [re, rgb] of TINTS) if (re.test(cell.path)) tint = rgb;
+      for (let k = 0; k < a.length; k += 4) {
+        if (tint) { a[k] = a[k] * tint[0] / 255; a[k + 1] = a[k + 1] * tint[1] / 255; a[k + 2] = a[k + 2] * tint[2] / 255; }
+        a[k + 3] = a[k + 3] * OPACITY;
+      }
+      cx.putImageData(px, ox, oy);
+    }
     const png = await new Promise(r => cv.toBlob(r, "image/png"));
 
-    // Geometry: one bone per Y layer, only faces next to air
+    // Geometry: one bone per Y layer, only faces that touch air
     const layers = Array.from({ length: h }, () => []);
     let cubes = 0;
     for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) for (let z = 0; z < d; z++) {
       if (!solid(x, y, z)) continue;
-      const i = at(x, y, z), uv = [i % 16, Math.floor(i / 16)];
-      const faces = {};
-      const f = (cond, face) => { if (cond) faces[face] = { uv, uv_size: [1, 1] }; };
-      f(!solid(x + 1, y, z), "west");  f(!solid(x - 1, y, z), "east");
-      f(!solid(x, y, z + 1), "south"); f(!solid(x, y, z - 1), "north");
-      f(!solid(x, y + 1, z), "up");    f(!solid(x, y - 1, z), "down");
-      if (!Object.keys(faces).length) continue;
-      layers[y].push({ origin: [-16 * (x + 1) + 8 * w, 16 * y, 16 * z - 8 * d], size: [16, 16, 16], inflate: -0.2, uv: faces });
+      const i = at(x, y, z), uv = {};
+      for (const [dir, v] of Object.entries(DIRS)) {
+        if (solid(x + v[0], y + v[1], z + v[2])) continue;
+        const c = palCells[i][dir];
+        uv[modelFace(dir)] = { uv: [(c % 16) * 16, Math.floor(c / 16) * 16], uv_size: [16, 16] };
+      }
+      if (!Object.keys(uv).length) continue;
+      const ox = X_NEGATED ? -16 * (x + 1) + 8 * w : 16 * x - 8 * w;
+      layers[y].push({ origin: [ox, 16 * y, 16 * z - 8 * d], size: [16, 16, 16], inflate: -0.2, uv });
       cubes++;
     }
-    const bones = [{ name: "root", pivot: [0, 0, 0] }];
-    layers.forEach((c, y) => { if (c.length) bones.push({ name: "layer_" + y, parent: "root", pivot: [0, 0, 0], cubes: c }); });
+    const bones = [{ name: "root", pivot: [0, 0, 0] }], layerNames = [];
+    layers.forEach((c, y) => { if (c.length) { bones.push({ name: "layer_" + y, parent: "root", pivot: [0, 0, 0], cubes: c }); layerNames.push(y); } });
     const geo = {
       format_version: "1.12.0",
       "minecraft:geometry": [{
         description: {
-          identifier: "geometry.ghost." + id,
-          texture_width: 16, texture_height: rows,
-          visible_bounds_width: Math.ceil(Math.hypot(w, d)) + 2,
-          visible_bounds_height: h + 2,
-          visible_bounds_offset: [0, h / 2, 0]
+          identifier: "geometry.ghost." + id, texture_width: 256, texture_height: rows * 16,
+          visible_bounds_width: Math.ceil(Math.hypot(w, d)) + 2, visible_bounds_height: h + 2, visible_bounds_offset: [0, h / 2, 0]
         },
         bones
       }]
     };
 
-    const rpId = id + "_ghost_RP", bpId = id + "_ghost_BP";
-    const rpUuid = uuid(), bpUuid = uuid();
+    // Render controller: variant 0 = all layers, variant n+1 = only layer n
+    const vis = [{ "*": false }, { root: true }];
+    layerNames.forEach(y => vis.push({ ["layer_" + y]: `query.variant == 0 || query.variant == ${y + 1}` }));
+    const rc = {
+      format_version: "1.8.0",
+      render_controllers: { ["controller.render.ghost." + id]: {
+        geometry: "Geometry.default", materials: [{ "*": "Material.default" }], textures: ["Texture.default"], part_visibility: vis
+      } }
+    };
     const clientEntity = {
       format_version: "1.10.0",
       "minecraft:client_entity": { description: {
@@ -167,75 +271,146 @@
         materials: { default: "entity_alphablend" },
         textures: { default: "textures/ghost/" + id },
         geometry: { default: "geometry.ghost." + id },
-        render_controllers: ["controller.render.default"]
+        render_controllers: ["controller.render.ghost." + id]
       } }
     };
+
+    // Server entity with one event per layer (sets the variant)
+    const groups = {}, allGroups = [], events = {};
+    for (let y = 0; y < h; y++) { groups["ghost:g" + y] = { "minecraft:variant": { value: y + 1 } }; allGroups.push("ghost:g" + y); }
+    events["ghost:layer_all"] = { remove: { component_groups: allGroups } };
+    for (let y = 0; y < h; y++) events["ghost:layer_" + y] = { remove: { component_groups: allGroups }, add: { component_groups: ["ghost:g" + y] } };
     const serverEntity = {
       format_version: "1.20.0",
       "minecraft:entity": {
         description: { identifier: "ghost:" + id, is_spawnable: false, is_summonable: true, is_experimental: false },
+        component_groups: groups,
         components: {
           "minecraft:collision_box": { width: 0.1, height: 0.1 },
           "minecraft:physics": { has_gravity: false, has_collision: false },
           "minecraft:pushable": { is_pushable: false, is_pushable_by_piston: false },
           "minecraft:persistent": {},
           "minecraft:type_family": { family: ["ghost"] }
-        }
+        },
+        events
       }
     };
-    const manifest = (name, type, u, mu) => ({
-      format_version: 2,
-      header: { name, description: "Ghost preview for " + id, uuid: u, version: [1, 0, 0], min_engine_version: [1, 20, 0] },
-      modules: [{ type, uuid: mu, version: [1, 0, 0] }]
-    });
+    const dataJs = "export default " + JSON.stringify({ size: [w, h, d], palette: pal.map(n => ({ name: n })), blocks: idx }) + ";";
+    return { id, png, geo, rc, clientEntity, serverEntity, dataJs, cubes, size: [w, h, d], textured, cells: cellList.length };
+  }
 
-    const zip = new JSZip();
-    const rp = zip.folder(rpId), bp = zip.folder(bpId);
-    rp.file("manifest.json", JSON.stringify(manifest("Ghost RP: " + id, "resources", rpUuid, uuid())));
-    rp.file("models/entity/ghost_" + id + ".geo.json", JSON.stringify(geo));
-    rp.file("textures/ghost/" + id + ".png", png);
-    rp.file("entity/ghost_" + id + ".entity.json", JSON.stringify(clientEntity));
-    bp.file("manifest.json", JSON.stringify(manifest("Ghost BP: " + id, "data", bpUuid, uuid())));
-    bp.file("entities/ghost_" + id + ".json", JSON.stringify(serverEntity));
-    const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-    return { id, blob, cubes, size: [w, h, d], kb: Math.round(blob.size / 1024) };
+  // ---------- Whole addon ----------
+  async function buildAddon(items, onProgress) {
+    await loadVanilla();
+    const runtime = await (await fetch("runtime/main.js", { cache: "no-store" })).text();
+    const version = [1, 0, Math.floor(Date.now() / 60000)];
+    const addon = new JSZip();
+    const rp = addon.folder("BlueprintBuilder_RP"), bp = addon.folder("BlueprintBuilder_BP");
+    const built = [];
+    for (let n = 0; n < items.length; n++) {
+      onProgress(`Building ${items[n].id} (${n + 1}/${items.length})...`);
+      const b = await buildStructure(items[n].id, items[n].data);
+      built.push(b);
+      rp.file(`models/entity/ghost_${b.id}.geo.json`, JSON.stringify(b.geo));
+      rp.file(`textures/ghost/${b.id}.png`, b.png);
+      rp.file(`entity/ghost_${b.id}.entity.json`, JSON.stringify(b.clientEntity));
+      rp.file(`render_controllers/ghost_${b.id}.rc.json`, JSON.stringify(b.rc));
+      bp.file(`entities/ghost_${b.id}.json`, JSON.stringify(b.serverEntity));
+      bp.file(`scripts/structures/${b.id}.js`, b.dataJs);
+    }
+    rp.file("manifest.json", JSON.stringify({
+      format_version: 2,
+      header: { name: "Blueprint Builder RP", description: "Ghost models", uuid: RP_UUID, version, min_engine_version: [1, 21, 0] },
+      modules: [{ type: "resources", uuid: RP_MOD, version }]
+    }));
+    bp.file("manifest.json", JSON.stringify({
+      format_version: 2,
+      header: { name: "Blueprint Builder", description: "Litematica-style build assistant", uuid: BP_UUID, version, min_engine_version: [1, 21, 0] },
+      modules: [
+        { type: "data", uuid: BP_DATA, version },
+        { type: "script", language: "javascript", uuid: BP_SCRIPT, version, entry: "scripts/main.js" }
+      ],
+      dependencies: [
+        { module_name: "@minecraft/server", version: "2.0.0" },
+        { module_name: "@minecraft/server-ui", version: "2.0.0" },
+        { uuid: RP_UUID, version }
+      ]
+    }));
+    bp.file("scripts/main.js", runtime);
+    bp.file("scripts/structures/index.js",
+      built.map(b => `import ${b.id} from "./${b.id}.js";`).join("\n") +
+      `\n\nexport const structures = { ${built.map(b => b.id).join(", ")} };\n`);
+
+    onProgress("Packing...");
+    return { blob: await addon.generateAsync({ type: "blob", compression: "DEFLATE" }), built };
   }
 
   // ---------- UI ----------
-  const out = $("out");
+  const items = [];
+  const list = $("list"), actions = $("actions"), status = $("status");
+
+  function render() {
+    list.innerHTML = "";
+    items.forEach((it, n) => {
+      const row = document.createElement("div"); row.className = "row";
+      const info = document.createElement("span");
+      info.textContent = it.id;
+      const sm = document.createElement("small");
+      sm.textContent = it.data.size.join("x") + " | entity: ghost:" + it.id;
+      info.appendChild(sm);
+      const rm = document.createElement("button"); rm.className = "quiet"; rm.textContent = "Remove";
+      rm.onclick = () => { items.splice(n, 1); render(); };
+      row.append(info, rm);
+      list.appendChild(row);
+    });
+    actions.hidden = items.length === 0;
+    $("build").textContent = `Build addon (${items.length} structure${items.length === 1 ? "" : "s"})`;
+  }
+
+  async function addFiles(files) {
+    for (const f of files) {
+      try {
+        const id = ident(f.name), data = parse(await f.arrayBuffer());
+        const at = items.findIndex(x => x.id === id);
+        if (at >= 0) items[at] = { id, data }; else items.push({ id, data });
+      } catch (e) {
+        const row = document.createElement("div"); row.className = "row err";
+        row.textContent = f.name + ": could not read (" + e.message + ")";
+        list.appendChild(row);
+      }
+    }
+    render();
+  }
+
   function download(name, blob) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  async function handle(files) {
-    for (const f of files) {
-      const row = document.createElement("div"); row.className = "row";
-      try {
-        const r = await build(f.name, parse(await f.arrayBuffer()));
-        const info = document.createElement("span");
-        info.textContent = f.name;
-        const sm = document.createElement("small");
-        sm.textContent = `${r.size.join("x")} | ${r.cubes} cubes | ${r.kb} KB | entity: ghost:${r.id}`
-          + (r.cubes > 30000 ? " | very large, may lag" : "");
-        info.appendChild(sm);
-        const b = document.createElement("button");
-        b.textContent = "Download " + r.id + ".mcaddon";
-        b.onclick = () => download(r.id + ".mcaddon", r.blob);
-        row.append(info, b);
-      } catch (e) {
-        row.className = "row err";
-        row.textContent = f.name + ": generation failed (" + e.message + ")";
-      }
-      out.appendChild(row);
+
+  $("build").onclick = async () => {
+    const btn = $("build"); btn.disabled = true;
+    try {
+      const { blob, built } = await buildAddon(items, t => { status.textContent = t; });
+      const tx = built.reduce((a, b) => a + b.textured, 0), all = built.reduce((a, b) => a + b.cells, 0);
+      const cubes = built.reduce((a, b) => a + b.cubes, 0);
+      status.textContent = `Done: ${cubes} cubes, ${tx}/${all} textures found` +
+        (tx === 0 ? " (vanilla textures could not be loaded, flat colours used)" : "") +
+        (cubes > 30000 ? ". Very large, may lag in game." : ".");
+      download("BlueprintBuilder.mcaddon", blob);
+    } catch (e) {
+      status.textContent = "Build failed: " + e.message;
     }
-  }
+    btn.disabled = false;
+  };
+  $("clear").onclick = () => { items.length = 0; status.textContent = ""; render(); };
+
   const drop = $("drop"), input = $("file");
   drop.onclick = () => input.click();
-  input.onchange = () => handle(input.files);
+  input.onchange = () => addFiles(input.files);
   drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
   drop.ondragleave = () => drop.classList.remove("over");
-  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); handle(e.dataTransfer.files); };
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); };
 </script>
 </body>
 </html>
