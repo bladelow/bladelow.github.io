@@ -26,6 +26,15 @@
   button:hover { background:var(--ice); border-color:var(--ice); }
   button.quiet { background:transparent; color:var(--ice); border-color:var(--line); }
   button:disabled { opacity:.5; cursor:wait; }
+  details { margin-top:1.4rem; background:var(--ink2); border-left:4px solid var(--steel); padding:.8rem 1.1rem; }
+  summary { cursor:pointer; font-weight:700; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.8rem; margin:1rem 0; }
+  label { display:flex; flex-direction:column; gap:.25rem; color:var(--steel); font-size:.9rem; }
+  label.check { flex-direction:row; align-items:center; gap:.5rem; }
+  input:not([type]) { background:var(--ink); color:var(--ice); border:1px solid var(--line); padding:.45rem .6rem; font:inherit; }
+  .btnrow { display:flex; gap:.6rem; flex-wrap:wrap; margin:1rem 0 .4rem; }
+  #problems { color:#ff9b9b; margin:.4rem 0; }
+  pre { max-height:260px; overflow:auto; background:var(--ink); border:1px solid var(--line); padding:.7rem; font-size:.8rem; color:var(--steel); }
   #actions { margin-top:1.2rem; display:flex; gap:.7rem; flex-wrap:wrap; align-items:center; }
   #status { color:var(--steel); }
   footer { margin-top:4rem; padding:2rem 6vw; border-top:1px solid var(--line); color:var(--steel); text-align:center; }
@@ -42,6 +51,27 @@
     <input id="file" type="file" accept=".mcstructure" multiple hidden>
   </div>
   <div id="list"></div>
+
+  <details id="settings" open>
+    <summary>Pack settings and manifest preview</summary>
+    <div class="grid">
+      <label>Addon name<input id="s_name" value="Blueprint Builder"></label>
+      <label>Description<input id="s_desc" value="Litematica-style build assistant"></label>
+      <label>Pack version<input id="s_ver" value="1.0.0"></label>
+      <label>Min engine version<input id="s_engine" value="1.21.0"></label>
+      <label>@minecraft/server<input id="s_server" value="2.0.0"></label>
+      <label>@minecraft/server-ui<input id="s_ui" value="2.0.0"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="s_dep" checked> Behavior pack requires the resource pack (turns it on automatically)</label>
+    <div class="btnrow">
+      <button id="newuuid" class="quiet">Generate new UUIDs</button>
+      <button id="copyBP" class="quiet">Copy BP manifest</button>
+      <button id="copyRP" class="quiet">Copy RP manifest</button>
+    </div>
+    <p id="problems"></p>
+    <pre id="preview"></pre>
+  </details>
+
   <div id="actions" hidden>
     <button id="build">Build addon</button>
     <button id="clear" class="quiet">Clear list</button>
@@ -64,10 +94,6 @@
     [/grass_top|grass_carried|leaves|fern|vine|tallgrass|double_plant_grass/, [124, 189, 107]],
     [/water/, [63, 118, 228]]
   ];
-  // Fixed ids so re-importing the addon replaces the old one
-  const RP_UUID = "7c2e9a14-5b3d-4e68-9f01-a4d8c6b27e35", RP_MOD = "e1f4b8d2-96a7-4c3e-8b50-2d7a9c1f6e84";
-  const BP_UUID = "3a9d5c71-e284-4b6f-a1d9-8c0e7f52b463", BP_DATA = "b6d08e27-4f13-49a5-9c7e-1a5b3d8f2c90", BP_SCRIPT = "d4a71f93-0c6e-4852-b3a8-6e9f2d1c7b05";
-
   // ---------- Theme from config.js ----------
   if (typeof SITE !== "undefined") {
     const r = document.documentElement.style, T = SITE.theme || {};
@@ -299,11 +325,73 @@
     return { id, png, geo, rc, clientEntity, serverEntity, dataJs, cubes, size: [w, h, d], textured, cells: cellList.length };
   }
 
+  // ---------- Pack settings and manifests ----------
+  const UKEY = "bpb_uuids";
+  function makeUuids(force) {
+    let u = null;
+    try { if (!force) u = JSON.parse(localStorage.getItem(UKEY)); } catch (e) { u = null; }
+    if (!u || !u.rp) {
+      u = { rp: crypto.randomUUID(), rpMod: crypto.randomUUID(), bp: crypto.randomUUID(), bpData: crypto.randomUUID(), bpScript: crypto.randomUUID() };
+      try { localStorage.setItem(UKEY, JSON.stringify(u)); } catch (e) { /* storage blocked */ }
+    }
+    return u;
+  }
+  let UU = makeUuids(false);
+
+  const triple = t => { const m = /^\s*(\d+)\.(\d+)\.(\d+)\s*$/.exec(t); return m ? [+m[1], +m[2], +m[3]] : null; };
+  const apiVer = t => /^\d+\.\d+\.\d+(-beta)?$/.test(t.trim()) ? t.trim() : null;
+
+  function readSettings() {
+    const errors = [];
+    const name = $("s_name").value.trim(), desc = $("s_desc").value.trim();
+    const ver = triple($("s_ver").value), engine = triple($("s_engine").value);
+    const server = apiVer($("s_server").value), ui = apiVer($("s_ui").value);
+    if (!name) errors.push("Addon name is empty");
+    if (!ver) errors.push("Pack version must look like 1.0.0");
+    if (!engine) errors.push("Min engine version must look like 1.21.0");
+    if (!server) errors.push("@minecraft/server version must look like 2.0.0 (or 2.1.0-beta)");
+    if (!ui) errors.push("@minecraft/server-ui version must look like 2.0.0 (or 2.1.0-beta)");
+    return { errors, name, desc, ver, engine, server, ui, dep: $("s_dep").checked };
+  }
+
+  function makeManifests(S) {
+    const rp = {
+      format_version: 2,
+      header: { name: S.name + " RP", description: S.desc, uuid: UU.rp, version: S.ver, min_engine_version: S.engine },
+      modules: [{ type: "resources", uuid: UU.rpMod, version: S.ver }]
+    };
+    const deps = [
+      { module_name: "@minecraft/server", version: S.server },
+      { module_name: "@minecraft/server-ui", version: S.ui }
+    ];
+    if (S.dep) deps.push({ uuid: UU.rp, version: S.ver });
+    const bp = {
+      format_version: 2,
+      header: { name: S.name, description: S.desc, uuid: UU.bp, version: S.ver, min_engine_version: S.engine },
+      modules: [
+        { type: "data", uuid: UU.bpData, version: S.ver },
+        { type: "script", language: "javascript", uuid: UU.bpScript, version: S.ver, entry: "scripts/main.js" }
+      ],
+      dependencies: deps
+    };
+    return { rp, bp };
+  }
+
+  function refreshPreview() {
+    const S = readSettings();
+    $("problems").textContent = S.errors.join(". ");
+    $("preview").textContent = S.errors.length ? "" :
+      "// BP manifest.json\n" + JSON.stringify(makeManifests(S).bp, null, 2) +
+      "\n\n// RP manifest.json\n" + JSON.stringify(makeManifests(S).rp, null, 2);
+  }
+
   // ---------- Whole addon ----------
   async function buildAddon(items, onProgress) {
     await loadVanilla();
     const runtime = await (await fetch("runtime/main.js", { cache: "no-store" })).text();
-    const version = [1, 0, Math.floor(Date.now() / 60000)];
+    const S = readSettings();
+    if (S.errors.length) throw new Error(S.errors.join(". "));
+    const M = makeManifests(S);
     const addon = new JSZip();
     const rp = addon.folder("BlueprintBuilder_RP"), bp = addon.folder("BlueprintBuilder_BP");
     const built = [];
@@ -318,24 +406,8 @@
       bp.file(`entities/ghost_${b.id}.json`, JSON.stringify(b.serverEntity));
       bp.file(`scripts/structures/${b.id}.js`, b.dataJs);
     }
-    rp.file("manifest.json", JSON.stringify({
-      format_version: 2,
-      header: { name: "Blueprint Builder RP", description: "Ghost models", uuid: RP_UUID, version, min_engine_version: [1, 21, 0] },
-      modules: [{ type: "resources", uuid: RP_MOD, version }]
-    }));
-    bp.file("manifest.json", JSON.stringify({
-      format_version: 2,
-      header: { name: "Blueprint Builder", description: "Litematica-style build assistant", uuid: BP_UUID, version, min_engine_version: [1, 21, 0] },
-      modules: [
-        { type: "data", uuid: BP_DATA, version },
-        { type: "script", language: "javascript", uuid: BP_SCRIPT, version, entry: "scripts/main.js" }
-      ],
-      dependencies: [
-        { module_name: "@minecraft/server", version: "2.0.0" },
-        { module_name: "@minecraft/server-ui", version: "2.0.0" },
-        { uuid: RP_UUID, version }
-      ]
-    }));
+    rp.file("manifest.json", JSON.stringify(M.rp, null, 2));
+    bp.file("manifest.json", JSON.stringify(M.bp, null, 2));
     bp.file("scripts/main.js", runtime);
     bp.file("scripts/structures/index.js",
       built.map(b => `import ${b.id} from "./${b.id}.js";`).join("\n") +
@@ -404,6 +476,19 @@
     btn.disabled = false;
   };
   $("clear").onclick = () => { items.length = 0; status.textContent = ""; render(); };
+
+  for (const id of ["s_name", "s_desc", "s_ver", "s_engine", "s_server", "s_ui", "s_dep"]) $(id).addEventListener("input", refreshPreview);
+  $("newuuid").onclick = () => { UU = makeUuids(true); refreshPreview(); };
+  const copyText = async (btn, which) => {
+    const S = readSettings(); if (S.errors.length) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(makeManifests(S)[which], null, 2));
+      const t = btn.textContent; btn.textContent = "Copied"; setTimeout(() => { btn.textContent = t; }, 1200);
+    } catch (e) { /* clipboard blocked */ }
+  };
+  $("copyBP").onclick = () => copyText($("copyBP"), "bp");
+  $("copyRP").onclick = () => copyText($("copyRP"), "rp");
+  refreshPreview();
 
   const drop = $("drop"), input = $("file");
   drop.onclick = () => input.click();
