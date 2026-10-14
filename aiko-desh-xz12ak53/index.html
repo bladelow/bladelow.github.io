@@ -1,73 +1,657 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#0b1118">
+
     <title>Aiko Control Panel</title>
+
     <style>
-        :root { color-scheme: dark; font: 15px/1.5 system-ui, sans-serif; background: #0d1218; color: #f3f6f8; }
-        * { box-sizing: border-box; }
-        body { margin: 0; background: radial-gradient(circle at top right, #23454e, #0d1218 48%); min-height: 100vh; }
-        main { max-width: 1000px; margin: auto; padding: 32px 18px 64px; }
-        header { border-bottom: 1px solid #2b394a; margin-bottom: 22px; padding-bottom: 16px; }
-        h1, h2 { margin: 0 0 8px; }
-        h1 { font-size: clamp(26px, 6vw, 40px); }
-        h2 { font-size: 18px; }
-        p, .hint { color: #aab7c5; margin: 6px 0; }
-        .panel { background: #17212d; border: 1px solid #2b394a; border-radius: 8px; padding: 18px; margin: 14px 0; }
-        label { display: grid; gap: 6px; color: #aab7c5; margin: 10px 0; }
-        input, textarea { width: 100%; background: #101821; color: #f3f6f8; border: 1px solid #354457; border-radius: 5px; padding: 10px; font: inherit; }
-        input[type="checkbox"] { width: auto; }
-        textarea { min-height: 76px; resize: vertical; font-family: ui-monospace, monospace; }
-        .setting { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(240px, 2fr); gap: 12px; align-items: center; border-top: 1px solid #2b394a; padding: 9px 0; }
-        .setting label { margin: 0; }
-        .check { display: flex; align-items: center; gap: 10px; }
-        button { border: 0; border-radius: 5px; background: #73e0a0; color: #0d1712; cursor: pointer; font-weight: 750; padding: 11px 15px; }
-        button.secondary { background: #354457; color: #f3f6f8; }
-        button:disabled { opacity: .55; cursor: wait; }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
-        .status { min-height: 24px; overflow-wrap: anywhere; }
-        .success { color: #73e0a0; } .error { color: #ff9898; }
-        #newCode { min-height: 120px; }
-        [hidden] { display: none !important; }
-        @media (max-width: 680px) { .setting { grid-template-columns: 1fr; } }
+        :root {
+            color-scheme: dark;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
+                "Segoe UI", sans-serif;
+            background: #0b1118;
+            color: #eef3f8;
+
+            --bg: #0b1118;
+            --surface: #121c27;
+            --surface-2: #182432;
+            --border: #293849;
+            --text: #eef3f8;
+            --muted: #9baabc;
+            --accent: #78e6a5;
+            --accent-hover: #99f2bb;
+            --danger: #ff9292;
+            --radius: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            min-height: 100%;
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(
+                    ellipse at 100% 0%,
+                    rgba(47, 111, 98, 0.18),
+                    transparent 42%
+                ),
+                radial-gradient(
+                    ellipse at 0% 35%,
+                    rgba(44, 83, 117, 0.10),
+                    transparent 35%
+                ),
+                var(--bg);
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        textarea:focus-visible,
+        select:focus-visible,
+        summary:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+        }
+
+        main {
+            width: min(100% - 32px, 960px);
+            margin-inline: auto;
+            padding: 30px 0 48px;
+        }
+
+        header {
+            margin-bottom: 22px;
+            padding: 4px 0 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .brand-icon {
+            display: grid;
+            place-items: center;
+            flex: 0 0 46px;
+            width: 46px;
+            height: 46px;
+            border: 1px solid #355344;
+            border-radius: 14px;
+            background: #172b24;
+            color: var(--accent);
+            font-size: 23px;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin-top: 0;
+        }
+
+        h1 {
+            margin-bottom: 2px;
+            font-size: clamp(25px, 5vw, 36px);
+            line-height: 1.2;
+            letter-spacing: -0.8px;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+
+        h3 {
+            font-size: 15px;
+        }
+
+        p {
+            margin-bottom: 9px;
+        }
+
+        .subtitle,
+        .hint,
+        .muted {
+            color: var(--muted);
+        }
+
+        .subtitle {
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+
+        .steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 15px;
+        }
+
+        .step {
+            padding: 5px 9px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(18, 28, 39, 0.7);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .panel {
+            min-width: 0;
+            margin: 14px 0;
+            padding: clamp(15px, 3vw, 22px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: rgba(18, 28, 39, 0.94);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+        }
+
+        .panel > :last-child {
+            margin-bottom: 0;
+        }
+
+        .panel-description {
+            margin-top: -8px;
+            margin-bottom: 16px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        label {
+            display: grid;
+            gap: 7px;
+            min-width: 0;
+            margin: 12px 0;
+            color: #dbe4ee;
+            font-size: 13px;
+            font-weight: 550;
+        }
+
+        input:not([type="checkbox"]):not([type="file"]),
+        textarea,
+        select {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            min-height: 44px;
+            padding: 11px 12px;
+            border: 1px solid #34475b;
+            border-radius: 9px;
+            background: #0d151e;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.5;
+            transition: border-color 0.15s ease,
+                        background 0.15s ease;
+        }
+
+        input:not([type="checkbox"]):focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--accent);
+            outline: none;
+            background: #101b25;
+        }
+
+        textarea {
+            min-height: 88px;
+            resize: vertical;
+        }
+
+        #incomingCode,
+        #newCode {
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        #newCode {
+            min-height: 130px;
+        }
+
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        input[type="file"]::file-selector-button {
+            margin-right: 10px;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-2);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        input[type="checkbox"] {
+            flex: 0 0 auto;
+            width: 19px;
+            height: 19px;
+            margin: 0;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        button {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            min-height: 43px;
+            max-width: 100%;
+            padding: 10px 16px;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            background: var(--accent);
+            color: #0b1710;
+            font-size: 13px;
+            font-weight: 750;
+            cursor: pointer;
+            transition: background 0.15s ease,
+                        transform 0.15s ease,
+                        border-color 0.15s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            border-color: var(--border);
+            background: #202e3e;
+            color: var(--text);
+        }
+
+        button.secondary:hover:not(:disabled) {
+            background: #2a3a4c;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: wait;
+        }
+
+        .status {
+            min-width: 0;
+            min-height: 22px;
+            margin: 12px 0 0;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        .success {
+            color: var(--accent);
+        }
+
+        .error {
+            color: var(--danger);
+        }
+
+        #editor {
+            margin-top: 24px;
+        }
+
+        #settings {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: start;
+            gap: 2px 14px;
+        }
+
+        .settings-panel {
+            min-width: 0;
+            margin: 0 0 14px;
+            padding: 18px;
+        }
+
+        .settings-panel h2 {
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* New friendly settings editor */
+
+        .friendly-field {
+            display: grid;
+            gap: 7px;
+            min-width: 0;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(52, 71, 91, 0.55);
+        }
+
+        .friendly-field:last-child {
+            border-bottom: 0;
+        }
+
+        .friendly-field > label:first-child {
+            margin: 0;
+            color: #dbe4ee;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .friendly-field textarea {
+            min-height: 76px;
+        }
+
+        .friendly-field .hint,
+        .friendly-field small {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .friendly-check {
+            display: flex;
+            align-items: center;
+            width: fit-content;
+            min-height: 38px;
+            margin: 0;
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: #0d151e;
+        }
+
+        .friendly-check span {
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .friendly-object {
+            min-width: 0;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: #0d151e;
+            overflow: hidden;
+        }
+
+        .friendly-object summary {
+            padding: 11px 12px;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 650;
+            cursor: pointer;
+        }
+
+        .friendly-object-body {
+            display: grid;
+            gap: 0;
+            padding: 0 12px 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .friendly-object-body .friendly-field {
+            padding: 10px 0;
+        }
+
+        code {
+            padding: 2px 5px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            background: #0d151e;
+            color: var(--accent);
+            font-size: 0.92em;
+            overflow-wrap: anywhere;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        footer {
+            padding: 15px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        @media (max-width: 720px) {
+            main {
+                width: min(100% - 24px, 560px);
+                padding-top: 20px;
+            }
+
+            #settings {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 0;
+            }
+
+            .settings-panel {
+                padding: 16px;
+            }
+
+            header {
+                padding-bottom: 17px;
+            }
+
+            .actions > button {
+                flex: 1 1 auto;
+            }
+        }
+
+        @media (max-width: 420px) {
+            main {
+                width: calc(100% - 20px);
+                padding-top: 14px;
+                padding-bottom: 28px;
+            }
+
+            .brand-icon {
+                flex-basis: 40px;
+                width: 40px;
+                height: 40px;
+            }
+
+            h1 {
+                font-size: 25px;
+            }
+
+            .panel {
+                padding: 14px;
+                border-radius: 12px;
+            }
+
+            .settings-panel {
+                padding: 13px;
+            }
+
+            .actions {
+                gap: 8px;
+            }
+
+            .actions > button {
+                width: 100%;
+            }
+
+            .steps {
+                gap: 6px;
+            }
+
+            .step {
+                font-size: 11px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
+
 <body>
 <main>
     <header>
-        <h1>Aiko Control Panel</h1>
-        <p>1. In Discord run <code>/panelcode</code> and paste the code below. 2. Change settings. 3. Click <b>Get panel code</b>. 4. In Discord run <code>/updatepanel</code> with the new code.</p>
-        <p class="hint">Only moderators can use these commands. The server owner and you get a DM listing every change.</p>
-    </header>
-    <section class="panel">
-        <h2>Open panel</h2>
-        <label>Code from /panelcode
-            <textarea id="incomingCode" spellcheck="false" placeholder="AIKO2...."></textarea>
-        </label>
-        <div class="actions">
-            <button id="loadButton" type="button">Open panel</button>
-            <label class="hint" style="margin:0">or upload the file: <input id="codeFile" type="file" accept=".txt,text/plain"></label>
+        <div class="brand">
+            <div class="brand-icon" aria-hidden="true">✦</div>
+            <div>
+                <h1>Aiko Control Panel</h1>
+                <p class="subtitle">
+                    Manage your Discord bot without editing JSON manually.
+                </p>
+            </div>
         </div>
-        <p id="loadStatus" class="status" role="status"></p>
+
+        <div class="steps" aria-label="Instructions">
+            <span class="step">1. Get /panelcode</span>
+            <span class="step">2. Edit settings</span>
+            <span class="step">3. Get panel code</span>
+            <span class="step">4. Run /updatepanel</span>
+        </div>
+
+        <p class="hint" style="margin-top: 12px; font-size: 12px;">
+            Only moderators can use these commands. The server owner and you
+            get a DM listing every change.
+        </p>
+    </header>
+
+    <section class="panel">
+        <h2>Open your panel</h2>
+        <p class="panel-description">
+            Paste the code you received from Discord.
+        </p>
+
+        <label for="incomingCode">
+            Panel code
+            <textarea
+                id="incomingCode"
+                spellcheck="false"
+                placeholder="Paste your AIKO2 code here..."
+            ></textarea>
+        </label>
+
+        <div class="actions">
+            <button id="loadButton" type="button">
+                Open panel
+            </button>
+
+            <label style="flex: 1; min-width: 180px; margin: 0;">
+                Or upload a code file
+                <input
+                    id="codeFile"
+                    type="file"
+                    accept=".txt,text/plain"
+                >
+            </label>
+        </div>
+
+        <p id="loadStatus" class="status" role="status" aria-live="polite"></p>
     </section>
+
     <div id="editor" hidden>
         <div id="settings"></div>
+
         <section class="panel">
-            <div class="actions" style="margin-top:0"><button id="getCodeButton" type="button">Get panel code</button><span id="status" class="status" role="status"></span></div>
+            <h2>Save your changes</h2>
+            <p class="panel-description">
+                Generate a new encrypted code after changing your settings.
+            </p>
+
+            <div class="actions">
+                <button id="getCodeButton" type="button">
+                    Generate update code
+                </button>
+                <span id="status" class="status" role="status"
+                      aria-live="polite"></span>
+            </div>
+
             <div id="newCodeBox" hidden>
                 <p id="changeList" class="hint"></p>
-                <p class="hint">Run <code>/updatepanel</code> in Discord and paste this code. For very long codes use the <code>file</code> option with the download.</p>
-                <textarea id="newCode" readonly spellcheck="false"></textarea>
+
+                <p class="hint" style="font-size: 13px;">
+                    In Discord, run <code>/updatepanel</code> and paste the
+                    generated code. If the code is very long, download the
+                    file and use the command's file option.
+                </p>
+
+                <label for="newCode">
+                    Generated update code
+                    <textarea
+                        id="newCode"
+                        readonly
+                        spellcheck="false"
+                    ></textarea>
+                </label>
+
                 <div class="actions">
-                    <button id="copyButton" class="secondary" type="button">Copy code</button>
-                    <button id="downloadButton" class="secondary" type="button">Download code</button>
+                    <button id="copyButton" class="secondary" type="button">
+                        Copy code
+                    </button>
+
+                    <button id="downloadButton" class="secondary" type="button">
+                        Download code
+                    </button>
                 </div>
             </div>
         </section>
     </div>
+
+    <footer>
+        Aiko Control Panel · Make changes carefully before updating your bot.
+    </footer>
 </main>
+
 <script src="./config.js"></script>
 <script src="./panel.js"></script>
 </body>
