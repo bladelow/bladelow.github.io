@@ -1,22 +1,16 @@
-import { world, system, ItemTypes } from "@minecraft/server";
+import { world, system, ItemTypes, MolangVariableMap } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 import { structures } from "./structures/index.js";
+import config from "./config.js";
 
-// ---------- Tuning ----------
+// ---------- Settings ----------
+const GHOST_MODE = config.mode !== "particle";   // "ghost" = ghost block entity, "particle" = particle preview
 const GHOST_PREFIX = "ghost:";
 const WRONG_PARTICLE = "minecraft:villager_angry"; // marks wrongly placed blocks
-const WRONG_RADIUS = 7;
-const WRONG_MAX = 100;
-
-// ---------- Ghost rotation calibration ----------
-// The menu button "Fix ghost rotation" cycles through 8 orientations until the ghost matches your rotation
-let CAL = 0;
-try { const v = world.getDynamicProperty("bp_cal"); if (typeof v === "number") CAL = v % 8; } catch (e) { /* not available */ }
-function yawFor(rot) {
-  const off = (CAL % 4) * 90, sign = CAL < 4 ? 1 : -1;
-  const y = (((off + sign * rot * 90) % 360) + 360) % 360;
-  return y > 180 ? y - 360 : y;
-}
+const WRONG_RADIUS = 7, WRONG_MAX = 100;
+const DOT_RADIUS = 6, DOT_MAX = 120;               // particle mode: dots for missing blocks
+const DOT_PARTICLE = "minecraft:colored_flame_particle";
+const LINE_PARTICLE = "minecraft:endrod";
 
 // ---------- Per-player state ----------
 const state = new Map();
@@ -25,7 +19,7 @@ function st(p) {
     state.set(p.id, {
       name: null, rot: 0, locked: false, anchor: null, show: true, auto: true,
       layer: null, lastKey: null,
-      ghost: null, ghostName: null, ghostDim: null, layerSent: undefined, sig: null,
+      ghost: null, ghostName: null, ghostDim: null, layerSent: undefined, rotSent: undefined, sig: null,
     });
   }
   return state.get(p.id);
@@ -48,7 +42,8 @@ const ITEM_MAP = {
   "minecraft:wheat": "minecraft:wheat_seeds",
 };
 
-function short(id) { return id.replace("minecraft:", ""); }
+const short = (id) => id.replace("minecraft:", "");
+const isAirName = (n) => n === "minecraft:air" || n === "minecraft:structure_void";
 
 function footprint(s, rot) {
   const [w, h, d] = s.size;
@@ -60,14 +55,14 @@ function countMaterials(s) {
   for (const i of s.blocks) {
     if (i < 0) continue;
     const n = s.palette[i].name;
-    if (n === "minecraft:air" || n === "minecraft:structure_void") continue;
+    if (isAirName(n)) continue;
     c[n] = (c[n] || 0) + 1;
   }
   return c;
 }
 
-// Block name at a position inside the rotated blueprint (null = air / outside)
-function blockAt(s, rot, lx, ly, lz) {
+// Palette index at a position inside the rotated blueprint (-1 = air / outside)
+function idxAt(s, rot, lx, ly, lz) {
   const [w, h, d] = s.size;
   let x, z;
   switch (rot) {
@@ -76,11 +71,14 @@ function blockAt(s, rot, lx, ly, lz) {
     case 2: x = w - 1 - lx; z = d - 1 - lz; break;
     default: x = w - 1 - lz; z = lx;
   }
-  if (x < 0 || x >= w || z < 0 || z >= d || ly < 0 || ly >= h) return null;
+  if (x < 0 || x >= w || z < 0 || z >= d || ly < 0 || ly >= h) return -1;
   const i = s.blocks[(x * h + ly) * d + z];
-  if (i == null || i < 0) return null;
-  const name = s.palette[i].name;
-  return (name === "minecraft:air" || name === "minecraft:structure_void") ? null : name;
+  if (i == null || i < 0 || isAirName(s.palette[i].name)) return -1;
+  return i;
+}
+function blockAt(s, rot, lx, ly, lz) {
+  const i = idxAt(s, rot, lx, ly, lz);
+  return i < 0 ? null : s.palette[i].name;
 }
 
 function countItem(container, itemId) {
@@ -92,24 +90,25 @@ function countItem(container, itemId) {
   return n;
 }
 
-// ---------- Ghost entity ----------
+// ---------- Ghost entity (ghost mode) ----------
 function ghostValid(s) {
   try { return !!(s.ghost && s.ghost.isValid); } catch (e) { return false; }
 }
 
 function removeGhost(s) {
   try { if (ghostValid(s)) s.ghost.remove(); } catch (e) { /* ignore */ }
-  s.ghost = null; s.ghostName = null; s.ghostDim = null; s.layerSent = undefined; s.sig = null;
+  s.ghost = null; s.ghostName = null; s.ghostDim = null; s.layerSent = undefined; s.rotSent = undefined; s.sig = null;
 }
 
 function updateGhost(p, s) {
   if (!s.name || !s.anchor || !s.show) { removeGhost(s); return; }
   const bp = structures[s.name];
   const [fw, , fd] = footprint(bp, s.rot);
-  // The model is centred on the entity, so the entity sits in the middle of the footprint
-  const pos = { x: s.anchor.x + fw / 2, y: s.anchor.y, z: s.anchor.z + fd / 2 };
+  // The entity sits away from the build (above or below, see "lift") and the model is offset back onto the build,
+  // so its tiny hitbox never blocks building
+  const pos = { x: s.anchor.x + fw / 2, y: s.anchor.y + (bp.lift ?? 0), z: s.anchor.z + fd / 2 };
   const dimId = p.dimension.id;
-  const sig = [s.name, pos.x, pos.y, pos.z, s.rot, s.layer, dimId, CAL].join("|");
+  const sig = [s.name, pos.x, pos.y, pos.z, s.rot, s.layer, dimId].join("|");
   if (ghostValid(s) && s.sig === sig) return;
 
   try {
@@ -118,9 +117,10 @@ function updateGhost(p, s) {
       s.ghost = p.dimension.spawnEntity(GHOST_PREFIX + s.name, pos);
       s.ghostName = s.name;
       s.ghostDim = dimId;
-      s.layerSent = undefined;
+      s.layerSent = undefined; s.rotSent = undefined;
     }
-    s.ghost.teleport(pos, { dimension: p.dimension, rotation: { x: 0, y: yawFor(s.rot) } });
+    s.ghost.teleport(pos, { dimension: p.dimension, rotation: { x: 0, y: 0 } });
+    if (s.rotSent !== s.rot) { s.ghost.triggerEvent("ghost:rot_" + s.rot); s.rotSent = s.rot; }
     if (s.layerSent !== s.layer) {
       s.ghost.triggerEvent(s.layer === null ? "ghost:layer_all" : "ghost:layer_" + s.layer);
       s.layerSent = s.layer;
@@ -131,14 +131,12 @@ function updateGhost(p, s) {
   }
 }
 
+// The ghost must never turn by itself: keep its yaw at 0
 function enforceYaw(s) {
   if (!ghostValid(s)) return;
   try {
-    const want = yawFor(s.rot);
-    const cur = s.ghost.getRotation().y;
-    let diff = Math.abs(want - cur) % 360;
-    if (diff > 180) diff = 360 - diff;
-    if (diff > 0.5) s.ghost.setRotation({ x: 0, y: want });
+    const y = s.ghost.getRotation().y;
+    if (Math.abs(y) > 0.5) s.ghost.setRotation({ x: 0, y: 0 });
   } catch (e) { /* ignore */ }
 }
 
@@ -172,33 +170,125 @@ system.runInterval(() => {
         s.anchor = { x: b.x - Math.floor(fw / 2), y: b.y + 1, z: b.z - Math.floor(fd / 2) };
       }
     }
-    updateGhost(p, s);
-    enforceYaw(s);
+    if (GHOST_MODE) {
+      updateGhost(p, s);
+      enforceYaw(s);
+    }
   }
 }, 1);
 
-// ---------- Wrong-block markers ----------
+// ---------- Particles ----------
+function colorMap(rgb) {
+  const m = new MolangVariableMap();
+  m.setColorRGB("variable.color", { red: rgb[0], green: rgb[1], blue: rgb[2] });
+  return m;
+}
+
+function spawn(dim, id, pos, vars) {
+  try { dim.spawnParticle(id, pos, vars); }
+  catch (e) { try { dim.spawnParticle(LINE_PARTICLE, pos); } catch (e2) { /* chunk not loaded */ } }
+}
+
+function line(dim, a, b, rgb) {
+  const len = Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y), Math.abs(b.z - a.z));
+  const steps = Math.max(1, Math.min(Math.round(len * 2), 40));
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const pos = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: a.z + (b.z - a.z) * t };
+    if (rgb) spawn(dim, DOT_PARTICLE, pos, colorMap(rgb));
+    else spawn(dim, LINE_PARTICLE, pos);
+  }
+}
+
+function box(dim, x0, y0, z0, x1, y1, z1, rgb) {
+  const P = (x, y, z) => ({ x, y, z });
+  line(dim, P(x0, y0, z0), P(x1, y0, z0), rgb); line(dim, P(x1, y0, z0), P(x1, y0, z1), rgb);
+  line(dim, P(x1, y0, z1), P(x0, y0, z1), rgb); line(dim, P(x0, y0, z1), P(x0, y0, z0), rgb);
+  line(dim, P(x0, y1, z0), P(x1, y1, z0), rgb); line(dim, P(x1, y1, z0), P(x1, y1, z1), rgb);
+  line(dim, P(x1, y1, z1), P(x0, y1, z1), rgb); line(dim, P(x0, y1, z1), P(x0, y1, z0), rgb);
+  line(dim, P(x0, y0, z0), P(x0, y1, z0), rgb); line(dim, P(x1, y0, z0), P(x1, y1, z0), rgb);
+  line(dim, P(x1, y0, z1), P(x1, y1, z1), rgb); line(dim, P(x0, y0, z1), P(x0, y1, z1), rgb);
+}
+
+// Window of blueprint coordinates around the player
+function window3(p, s, w, h, d, radius) {
+  const a = s.anchor, loc = p.location;
+  const px = Math.floor(loc.x) - a.x, pz = Math.floor(loc.z) - a.z;
+  let y0, y1;
+  if (s.layer !== null) { y0 = y1 = s.layer; }
+  else { const py = Math.floor(loc.y) - a.y; y0 = Math.max(0, py - 2); y1 = Math.min(h - 1, py + 3); }
+  return {
+    x0: Math.max(0, px - radius), x1: Math.min(w - 1, px + radius),
+    z0: Math.max(0, pz - radius), z1: Math.min(d - 1, pz + radius), y0, y1,
+  };
+}
+
+// Particle preview: outline, layer frame, coloured dots for missing blocks, cube around the block you aim at
+function drawParticlePreview(p, s) {
+  const bp = structures[s.name];
+  const [w, h, d] = footprint(bp, s.rot);
+  const a = s.anchor, dim = p.dimension;
+
+  box(dim, a.x, a.y, a.z, a.x + w, a.y + h, a.z + d, null);
+  if (!s.locked) return;
+
+  if (s.layer !== null) {
+    const y = a.y + s.layer;
+    box(dim, a.x, y, a.z, a.x + w, y + 1, a.z + d, [0.34, 0.82, 0.24]);
+  }
+
+  const win = window3(p, s, w, h, d, DOT_RADIUS);
+  let shown = 0;
+  outer:
+  for (let ly = win.y0; ly <= win.y1; ly++) {
+    for (let lx = win.x0; lx <= win.x1; lx++) {
+      for (let lz = win.z0; lz <= win.z1; lz++) {
+        if (shown >= DOT_MAX) break outer;
+        const i = idxAt(bp, s.rot, lx, ly, lz);
+        if (i < 0) continue;
+        const pos = { x: a.x + lx, y: a.y + ly, z: a.z + lz };
+        let wb;
+        try { wb = dim.getBlock(pos); } catch (e) { continue; }
+        if (!wb || wb.typeId === bp.palette[i].name) continue;   // unloaded or already correct
+        if (!wb.isAir) continue;                                   // wrong blocks are marked separately
+        spawn(dim, DOT_PARTICLE, { x: pos.x + 0.5, y: pos.y + 0.5, z: pos.z + 0.5 }, colorMap(bp.colors?.[i] ?? [0.8, 0.8, 0.8]));
+        shown++;
+      }
+    }
+  }
+
+  // Cube around the block you are about to place
+  const hit = p.getBlockFromViewDirection({ maxDistance: 8 });
+  if (hit) {
+    const t = targetPos(hit);
+    const i = idxAt(bp, s.rot, t.x - a.x, t.y - a.y, t.z - a.z);
+    if (i >= 0) box(dim, t.x, t.y, t.z, t.x + 1, t.y + 1, t.z + 1, bp.colors?.[i] ?? [1, 1, 1]);
+  }
+}
+
+system.runInterval(() => {
+  if (GHOST_MODE) return;
+  for (const p of world.getAllPlayers()) {
+    const s = state.get(p.id);
+    if (!s || !s.name || !s.show || !s.anchor) continue;
+    drawParticlePreview(p, s);
+  }
+}, 5);
+
+// ---------- Wrong-block markers (both modes) ----------
 system.runInterval(() => {
   for (const p of world.getAllPlayers()) {
     const s = state.get(p.id);
     if (!s || !s.name || !s.show || !s.locked || !s.anchor) continue;
     const bp = structures[s.name];
     const [w, h, d] = footprint(bp, s.rot);
-    const a = s.anchor, dim = p.dimension, loc = p.location;
-    const px = Math.floor(loc.x) - a.x, pz = Math.floor(loc.z) - a.z;
-    const x0 = Math.max(0, px - WRONG_RADIUS), x1 = Math.min(w - 1, px + WRONG_RADIUS);
-    const z0 = Math.max(0, pz - WRONG_RADIUS), z1 = Math.min(d - 1, pz + WRONG_RADIUS);
-    let y0, y1;
-    if (s.layer !== null) { y0 = y1 = s.layer; }
-    else {
-      const py = Math.floor(loc.y) - a.y;
-      y0 = Math.max(0, py - 2); y1 = Math.min(h - 1, py + 3);
-    }
+    const a = s.anchor, dim = p.dimension;
+    const win = window3(p, s, w, h, d, WRONG_RADIUS);
     let shown = 0;
     outer:
-    for (let ly = y0; ly <= y1; ly++) {
-      for (let lx = x0; lx <= x1; lx++) {
-        for (let lz = z0; lz <= z1; lz++) {
+    for (let ly = win.y0; ly <= win.y1; ly++) {
+      for (let lx = win.x0; lx <= win.x1; lx++) {
+        for (let lz = win.z0; lz <= win.z1; lz++) {
           if (shown >= WRONG_MAX) break outer;
           const name = blockAt(bp, s.rot, lx, ly, lz);
           if (!name) continue;
@@ -350,17 +440,16 @@ function mainMenu(p) {
   const layerTxt = s.layer === null ? "all" : (s.layer + 1) + " / " + h;
   new ActionFormData()
     .title("Blueprint Menu")
-    .body(`Structure: ${s.name ?? "none"}\nRotation: ${s.rot * 90}\nPosition: ${s.locked ? "locked" : "following"}\nLayer: ${layerTxt}\nAuto-fill: ${s.auto ? "on" : "off"}\nGhost rotation fix: ${CAL + 1} / 8`)
+    .body(`Structure: ${s.name ?? "none"}\nRotation: ${s.rot * 90}\nPosition: ${s.locked ? "locked" : "following"}\nLayer: ${layerTxt}\nAuto-fill: ${s.auto ? "on" : "off"}\nPreview: ${GHOST_MODE ? "ghost blocks" : "particles"}`)
     .button("Structure choose")
     .button("Material list")
     .button("Rotate 90")
     .button(s.locked ? "Unlock position" : "Lock position")
-    .button(s.show ? "Hide ghost" : "Show ghost")
+    .button(s.show ? "Hide preview" : "Show preview")
     .button(s.auto ? "Auto-fill: turn off" : "Auto-fill: turn on")
     .button("Layer up")
     .button("Layer down")
     .button("All layers")
-    .button("Fix ghost rotation")
     .show(p)
     .then((res) => {
       if (res.canceled) return;
@@ -379,12 +468,6 @@ function mainMenu(p) {
         case 6: changeLayer(p, 1); break;
         case 7: changeLayer(p, -1); break;
         case 8: s.layer = null; p.sendMessage("Showing all layers."); break;
-        case 9:
-          CAL = (CAL + 1) % 8;
-          try { world.setDynamicProperty("bp_cal", CAL); } catch (e) { /* not saved */ }
-          for (const st2 of state.values()) st2.sig = null;
-          p.sendMessage("Ghost rotation fix " + (CAL + 1) + " / 8. Rotate and compare with the real blocks; press again until they match.");
-          break;
       }
     });
 }
