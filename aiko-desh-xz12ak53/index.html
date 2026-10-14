@@ -10,13 +10,12 @@
         * { box-sizing: border-box; }
         body { margin: 0; background: radial-gradient(circle at top right, #23454e, #0d1218 48%); min-height: 100vh; }
         main { max-width: 1000px; margin: auto; padding: 32px 18px 64px; }
-        header { border-bottom: 1px solid #2b394a; margin-bottom: 22px; padding-bottom: 16px; display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+        header { border-bottom: 1px solid #2b394a; margin-bottom: 22px; padding-bottom: 16px; }
         h1, h2 { margin: 0 0 8px; }
         h1 { font-size: clamp(26px, 6vw, 40px); }
         h2 { font-size: 18px; }
         p, .hint { color: #aab7c5; margin: 6px 0; }
         .panel { background: #17212d; border: 1px solid #2b394a; border-radius: 8px; padding: 18px; margin: 14px 0; }
-        #loginPanel { max-width: 440px; margin: 40px auto; }
         label { display: grid; gap: 6px; color: #aab7c5; margin: 10px 0; }
         input, textarea { width: 100%; background: #101821; color: #f3f6f8; border: 1px solid #354457; border-radius: 5px; padding: 10px; font: inherit; }
         input[type="checkbox"] { width: auto; }
@@ -30,41 +29,43 @@
         .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
         .status { min-height: 24px; overflow-wrap: anywhere; }
         .success { color: #73e0a0; } .error { color: #ff9898; }
-        .savebar { position: sticky; bottom: 0; background: #0d1218ee; border-top: 1px solid #2b394a; padding: 12px 0; margin-top: 18px; }
+        #newCode { min-height: 120px; }
         [hidden] { display: none !important; }
         @media (max-width: 680px) { .setting { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 <main>
-    <section id="loginPanel" class="panel">
-        <h1>Aiko Panel</h1>
-        <p>Sign in with your Discord ID and the password you set using <code>/panelpassword set</code> in the server.</p>
-        <form id="loginForm">
-            <label>Discord ID
-                <input id="userId" inputmode="numeric" autocomplete="username" placeholder="e.g. 123456789012345678" required>
-            </label>
-            <label>Password
-                <input id="password" type="password" autocomplete="current-password" required>
-            </label>
-            <div class="actions"><button id="loginButton" type="submit">Log in</button></div>
-        </form>
-        <p id="loginStatus" class="status" role="status"></p>
-        <p class="hint">Don't know your ID? Discord → Settings → Advanced → Developer Mode, then right-click your name → Copy User ID. The <code>/panelpassword set</code> reply also shows it.</p>
-    </section>
-
-    <div id="app" hidden>
-        <header>
-            <div>
-                <h1>Aiko Panel</h1>
-                <p id="who"></p>
-            </div>
-            <div class="actions"><button id="reloadButton" class="secondary" type="button">Reload from bot</button><button id="logoutButton" class="secondary" type="button">Log out</button></div>
-        </header>
-        <div id="settings"></div>
-        <div class="savebar">
-            <div class="actions"><button id="saveButton" type="button">Save changes</button><span id="status" class="status" role="status"></span></div>
+    <header>
+        <h1>Aiko Control Panel</h1>
+        <p>1. In Discord run <code>/panelcode</code> and paste the code below. 2. Change settings. 3. Click <b>Get panel code</b>. 4. In Discord run <code>/updatepanel</code> with the new code.</p>
+        <p class="hint">Only moderators can use these commands. The server owner and you get a DM listing every change.</p>
+    </header>
+    <section class="panel">
+        <h2>Open panel</h2>
+        <label>Code from /panelcode
+            <textarea id="incomingCode" spellcheck="false" placeholder="AIKO2...."></textarea>
+        </label>
+        <div class="actions">
+            <button id="loadButton" type="button">Open panel</button>
+            <label class="hint" style="margin:0">or upload the file: <input id="codeFile" type="file" accept=".txt,text/plain"></label>
         </div>
+        <p id="loadStatus" class="status" role="status"></p>
+    </section>
+    <div id="editor" hidden>
+        <div id="settings"></div>
+        <section class="panel">
+            <div class="actions" style="margin-top:0"><button id="getCodeButton" type="button">Get panel code</button><span id="status" class="status" role="status"></span></div>
+            <div id="newCodeBox" hidden>
+                <p id="changeList" class="hint"></p>
+                <p class="hint">Run <code>/updatepanel</code> in Discord and paste this code. For very long codes use the <code>file</code> option with the download.</p>
+                <textarea id="newCode" readonly spellcheck="false"></textarea>
+                <div class="actions">
+                    <button id="copyButton" class="secondary" type="button">Copy code</button>
+                    <button id="downloadButton" class="secondary" type="button">Download code</button>
+                </div>
+            </div>
+        </section>
     </div>
 </main>
 <script src="./config.js"></script>
