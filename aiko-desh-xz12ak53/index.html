@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Aiko Control Panel</title>
+    <style>
+        :root { color-scheme: dark; font: 15px/1.5 system-ui, sans-serif; background: #0d1218; color: #f3f6f8; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: radial-gradient(circle at top right, #23454e, #0d1218 48%); min-height: 100vh; }
+        main { max-width: 1000px; margin: auto; padding: 32px 18px 64px; }
+        header { border-bottom: 1px solid #2b394a; margin-bottom: 22px; padding-bottom: 16px; display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+        h1, h2 { margin: 0 0 8px; }
+        h1 { font-size: clamp(26px, 6vw, 40px); }
+        h2 { font-size: 18px; }
+        p, .hint { color: #aab7c5; margin: 6px 0; }
+        .panel { background: #17212d; border: 1px solid #2b394a; border-radius: 8px; padding: 18px; margin: 14px 0; }
+        #loginPanel { max-width: 440px; margin: 40px auto; }
+        label { display: grid; gap: 6px; color: #aab7c5; margin: 10px 0; }
+        input, textarea { width: 100%; background: #101821; color: #f3f6f8; border: 1px solid #354457; border-radius: 5px; padding: 10px; font: inherit; }
+        input[type="checkbox"] { width: auto; }
+        textarea { min-height: 76px; resize: vertical; font-family: ui-monospace, monospace; }
+        .setting { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(240px, 2fr); gap: 12px; align-items: center; border-top: 1px solid #2b394a; padding: 9px 0; }
+        .setting label { margin: 0; }
+        .check { display: flex; align-items: center; gap: 10px; }
+        button { border: 0; border-radius: 5px; background: #73e0a0; color: #0d1712; cursor: pointer; font-weight: 750; padding: 11px 15px; }
+        button.secondary { background: #354457; color: #f3f6f8; }
+        button:disabled { opacity: .55; cursor: wait; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+        .status { min-height: 24px; overflow-wrap: anywhere; }
+        .success { color: #73e0a0; } .error { color: #ff9898; }
+        .savebar { position: sticky; bottom: 0; background: #0d1218ee; border-top: 1px solid #2b394a; padding: 12px 0; margin-top: 18px; }
+        [hidden] { display: none !important; }
+        @media (max-width: 680px) { .setting { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<main>
+    <section id="loginPanel" class="panel">
+        <h1>Aiko Panel</h1>
+        <p>Sign in with your Discord ID and the password you set using <code>/panelpassword set</code> in the server.</p>
+        <form id="loginForm">
+            <label>Discord ID
+                <input id="userId" inputmode="numeric" autocomplete="username" placeholder="e.g. 123456789012345678" required>
+            </label>
+            <label>Password
+                <input id="password" type="password" autocomplete="current-password" required>
+            </label>
+            <div class="actions"><button id="loginButton" type="submit">Log in</button></div>
+        </form>
+        <p id="loginStatus" class="status" role="status"></p>
+        <p class="hint">Don't know your ID? Discord → Settings → Advanced → Developer Mode, then right-click your name → Copy User ID. The <code>/panelpassword set</code> reply also shows it.</p>
+    </section>
+
+    <div id="app" hidden>
+        <header>
+            <div>
+                <h1>Aiko Panel</h1>
+                <p id="who"></p>
+            </div>
+            <div class="actions"><button id="reloadButton" class="secondary" type="button">Reload from bot</button><button id="logoutButton" class="secondary" type="button">Log out</button></div>
+        </header>
+        <div id="settings"></div>
+        <div class="savebar">
+            <div class="actions"><button id="saveButton" type="button">Save changes</button><span id="status" class="status" role="status"></span></div>
+        </div>
+    </div>
+</main>
+<script src="./config.js"></script>
+<script src="./panel.js"></script>
+</body>
+</html>
