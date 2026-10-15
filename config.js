@@ -98,6 +98,11 @@ team: [
       url: "https://www.curseforge.com/minecraft-bedrock/addons/block-of-sky-for-bedrock"
     },
     {
+      name: "Blade's Miner",
+      desc: "Area mining for Bedrock!",
+      url: "https://www.curseforge.com/minecraft-bedrock/scripts/blades-miner"
+    },
+    {
       name: "Better Flight System",
       desc: "This addon adds a smooth flight system with tilt camera, speed-based FOV, and immersive flying experience using elytra. Inspired by barrel roll mechanics.",
       url: "https://www.curseforge.com/minecraft-bedrock/addons/better-flight-system",
