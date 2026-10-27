@@ -139,6 +139,17 @@
     .slash line { animation: none; stroke-dashoffset: 0; }
     html { scroll-behavior: auto; }
   }
+  @media (max-width: 700px) {
+    body { font-size: 16px; }
+    .nav { padding: 0.4rem 4vw; }
+    .tabs { width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .tabs a { white-space: nowrap; padding: 0.7rem 0.9rem; }
+    .btns { flex-direction: column; }
+    .btn { justify-content: center; width: 100%; }
+    .link { padding: 1rem; }
+    .stat { flex: 1 1 100%; }
+    h2 { font-size: 1.6rem; }
+  }
 </style>
 </head>
 <body>
@@ -149,7 +160,8 @@
     <a href="#home" data-tab="home">Home</a>
     <a href="#projects" data-tab="projects">Projects</a>
     <a href="#community" data-tab="community">Community</a>
-    <a href="#ideas" data-tab="ideas">Ideas</a>
+    <a href="community.html">Feed</a>
+    <a href="login.html" id="acct">Login</a>
   </div>
 </nav>
 
@@ -196,7 +208,7 @@
         <section id="teamSec"><h2>Team</h2><div class="links" id="team"></div></section>
         <section>
           <h2>Share your ideas</h2>
-          <p>Want to suggest something for my content? Head to the <a href="#ideas" style="color:var(--edge);font-weight:700">Ideas</a> tab.</p>
+          <p>Want to suggest something for my content? Post it on the <a href="community.html" style="color:var(--edge);font-weight:700">community feed</a> or join the Discord.</p>
         </section>
       </div>
       <aside id="widgetBox">
@@ -210,21 +222,14 @@
   </div>
 </div>
 
-<!-- ============ IDEAS ============ -->
-<div class="tab" id="tab-ideas" hidden>
-  <div class="wrap">
-    <section>
-      <h2>Ideas</h2>
-      <p id="ideasIntro"></p>
-      <div id="comments"></div>
-    </section>
-  </div>
-</div>
-
 <footer id="footer"></footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="auth.js"></script>
 <script>
+(async () => {
+  await loadRemoteConfig();
   // Ye code sirf config.js ka data page pe lagata hai. Isse chhedne ki zarurat nahi.
   const $ = id => document.getElementById(id);
   function el(tag, attrs, text) {
@@ -270,6 +275,13 @@
     (SITE.navLinks || []).forEach(l => {
     const a = el("a", { href: l.url }, l.text);
     if (/^https?:/.test(l.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+    $("tabs").appendChild(a);
+  });
+  if ((SITE.posts || []).length) {
+    const a = el("a", { href: "posts.html" }, "Updates"); $("tabs").appendChild(a);
+  }
+  (SITE.pages || []).forEach(page => {
+    const a = el("a", { href: "page.html?slug=" + encodeURIComponent(page.slug || "") }, page.title || "Page");
     $("tabs").appendChild(a);
   });
   if (SITE.avatar) {
@@ -440,32 +452,8 @@
     $("commGrid").style.gridTemplateColumns = "1fr";
   }
 
-  // ---------- Ideas (giscus, tab khulne pe hi load hota hai) ----------
-  $("ideasIntro").textContent = SITE.ideasIntro;
-  let giscusLoaded = false;
-  function loadGiscus() {
-    if (giscusLoaded) return;
-    giscusLoaded = true;
-    const g = SITE.giscus;
-    if (g.repo && g.repoId && g.category && g.categoryId) {
-      const s = el("script", {
-        src: "https://giscus.app/client.js",
-        "data-repo": g.repo, "data-repo-id": g.repoId,
-        "data-category": g.category, "data-category-id": g.categoryId,
-        "data-mapping": "specific", "data-term": "Ideas",
-        "data-reactions-enabled": "1", "data-input-position": "top",
-        "data-theme": "dark", "data-lang": "en", crossorigin: "anonymous"
-      });
-      s.async = true;
-      $("comments").appendChild(s);
-    } else {
-      $("comments").appendChild(el("div", { class: "note" },
-        "The ideas board isn't set up yet. Add the 4 giscus values in config.js and the discussion will appear here."));
-    }
-  }
-
   // ---------- Tabs ----------
-  const TABS = ["home", "projects", "community", "ideas"];
+  const TABS = ["home", "projects", "community"];
   function showTab() {
     let t = location.hash.slice(1);
     if (TABS.indexOf(t) < 0) t = "home";
@@ -473,11 +461,12 @@
     document.querySelectorAll("#tabs a").forEach(a => {
       if (a.dataset.tab === t) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
-    if (t === "ideas") loadGiscus();
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", showTab);
   showTab();
+  fillAcct();
+})();
 </script>
 </body>
 </html>
