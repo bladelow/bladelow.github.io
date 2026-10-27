@@ -1,4 +1,5 @@
 /* Shared account helpers (Supabase). config.js me supabaseUrl + supabaseAnonKey chahiye. */
+
 var _sb = null;
 function getSb() {
   if (_sb) return _sb;
@@ -27,13 +28,13 @@ function loginDiscord() {
 async function logout() { await getSb().auth.signOut(); location.href = "index.html"; }
 async function fillAcct() {
   const a = document.getElementById("acct"); if (!a) return;
-  const u = await me(); a.textContent = u ? u.username : "Login";
+  const u = await me(); a.textContent = u ? u.username : "लॉगिन";
 }
 async function requireAdmin() {
   const p = document.getElementById("panel");
   const u = await me();
-  if (!getSb()) { p.textContent = "config.js me supabaseUrl aur supabaseAnonKey daal."; return false; }
-  if (!u) { p.innerHTML = '<p>Admin ke liye pehle login kar.</p><p><a href="login.html">Login with Discord</a></p>'; return false; }
-  if (u.role !== "admin") { p.textContent = "Ye account admin nahi hai."; return false; }
+  if (!getSb()) { p.textContent = "config.js में supabaseUrl और supabaseAnonKey डालें।"; return false; }
+  if (!u) { p.innerHTML = '<p>एडमिन पैनल के लिए पहले लॉगिन करें।</p><p><a href="login.html">Discord से लॉगिन करें</a></p>'; return false; }
+  if (u.role !== "admin") { p.textContent = "यह अकाउंट एडमिन नहीं है।"; return false; }
   return true;
 }
