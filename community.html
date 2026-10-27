@@ -52,11 +52,11 @@ input,textarea{width:100%;padding:.7rem;background:var(--ink2);color:var(--ice);
   }
   $("go").onclick=async()=>{
     const t=$("ti").value.trim(),b=$("bo").value.trim();
-    if(!t||!b){$("msg").textContent="Title aur text dono bhar.";return}
+    if(!t||!b){$("msg").textContent="Fill in both the title and the text.";return}
     $("go").disabled=true;
     const {error}=await s.from("posts").insert({title:t,body:b});
     $("go").disabled=false;
-    if(error){$("msg").textContent="Post nahi hua: "+error.message;return}
+    if(error){$("msg").textContent="Not posted: "+error.message;return}
     $("msg").textContent="";$("ti").value="";$("bo").value="";load();
   };
   load();
