@@ -227,7 +227,7 @@
   // ---------- Config text banana ----------
   function buildConfig() {
     const clean = JSON.parse(JSON.stringify(state));
-    return "/* BladeLow site config. admin.html se generate hua hai.\n   Chahe to yahan haath se bhi edit kar sakta hai. */\n\nconst SITE = " +
+    return "/* The Bladelow site config is generated from admin.html.\n   You can also edit it manually here, if you wish.. */\n\nconst SITE = " +
       JSON.stringify(clean, null, 2) + ";\n";
   }
 
@@ -261,7 +261,7 @@
       textList(box, state.about);
     },
     "Links": p => {
-      head(p, "Social links", "Tere saare social links.");
+      head(p, "Social links", "All your social links.");
       const box = el("div"); p.appendChild(box);
       listEditor(box, state.socials, [
         { label: "Name", key: "name" },
@@ -319,18 +319,18 @@
       ], { title: "New post", slug: "new-post", date: "", summary: "", content: "", url: "" }, it => it.title || "Untitled post");
     },
     "Video": p => {
-      head(p, "Home page video", "Kaunsa video home page pe chale. Upar se neeche priority: video, playlist, feed.");
-      p.appendChild(field("Featured video (link ya ID)", state, "featuredVideoId", { hint: "Ek specific video hamesha dikhane ke liye." }));
-      p.appendChild(field("Featured playlist (link ya ID)", state, "featuredPlaylistId", { hint: "Playlist me jo video sabse upar hoga wahi pehle chalega." }));
-      p.appendChild(field("Automatic feed", state, "videoFeed", { type: "select", options: ["popular", "videos", "uploads"], hint: "popular = home page ka popular video, videos = naya upload (Shorts ke bina), uploads = sab naye uploads." }));
-      p.appendChild(field("YouTube channel ID", state, "youtubeChannelId", { hint: "UC se shuru hota hai." }));
+      head(p, "Home page video", "Which video should play on the home page? Priority (from top to bottom): video, playlist, feed.");
+      p.appendChild(field("Featured video (link ya ID)", state, "featuredVideoId", { hint: "To always have a specific video visible." }));
+      p.appendChild(field("Featured playlist (link ya ID)", state, "featuredPlaylistId", { hint: "The video at the very top of the playlist will play first." }));
+      p.appendChild(field("Automatic feed", state, "videoFeed", { type: "select", options: ["popular", "videos", "uploads"], hint: "Popular = popular videos on the home page; videos = newly uploaded videos (excluding Shorts); uploads = all new uploads." }));
+      p.appendChild(field("YouTube channel ID", state, "youtubeChannelId", { hint: "It starts with UC" }));
     },
     "Community": p => {
       head(p, "Community", "Discord, subreddit aur team.");
       p.appendChild(field("Community text", state, "communityText", { type: "textarea", rows: 2 }));
       p.appendChild(field("Discord invite link", state, "discordInvite"));
-      p.appendChild(field("Discord server ID", state, "discordServerId", { hint: "Live widget ke liye. Discord me Widget on hona chahiye." }));
-      p.appendChild(field("Subreddit link", state, "redditUrl", { hint: "Khali = button nahi dikhega." }));
+      p.appendChild(field("Discord server ID", state, "discordServerId", { hint: "For the live widget, widgets must be enabled in Discord." }));
+      p.appendChild(field("Subreddit link", state, "redditUrl", { hint: "Empty = Button will not be visible." }));
       p.appendChild(el("h3", {}, "Team"));
       p.appendChild(el("p", { class: "desc" }, "This list on the site is for display purposes only. The actual roles and permissions are set within Discord and Reddit."));
       const box = el("div"); p.appendChild(box);
@@ -344,7 +344,7 @@
       const box = el("div"); p.appendChild(box);
       const s = getSb();
       const { data } = await s.from("posts").select("*, profiles(username,banned)").order("created_at", { ascending: false }).limit(100);
-      if (!data || !data.length) { box.textContent = "Abhi koi post nahi."; return; }
+      if (!data || !data.length) { box.textContent = "No posts yet."; return; }
       data.forEach(x => {
         const card = el("div", { class: "card" });
         const hd = el("div", { class: "cardhead" });
