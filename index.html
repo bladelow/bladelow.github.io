@@ -1,472 +1,944 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
 <meta charset="utf-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>BladeLow</title>
+
 <link rel="icon" href="pfp.jpg">
+
 <style>
+
   /* Colors config.js se aate hai (theme). Ye sirf default hai. */
+
   :root {
+
     --ink: #0c130e;
+
     --ink2: #15201a;
+
     --steel: #9db89a;
+
     --ice: #eef5ec;
+
     --edge: #57d13d;
+
     --line: #243428;
+
   }
+
   * { box-sizing: border-box; }
+
   html { scroll-behavior: smooth; }
+
   body {
+
     margin: 0;
+
     background: var(--ink);
+
     color: var(--ice);
+
     font: 17px/1.65 "Segoe UI", system-ui, Arial, sans-serif;
+
   }
+
   a { color: inherit; }
+
   [hidden] { display: none !important; }
+
   :focus-visible { outline: 3px solid var(--edge); outline-offset: 3px; }
+
   .ic { width: 1.25em; height: 1.25em; vertical-align: -0.25em; flex: none; }
 
+
+
   /* ---------- Top bar with tabs ---------- */
+
   .nav {
-    position: sticky; top: 0; z-index: 10;
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem 1.5rem;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: nowrap; gap: 0.75rem;
     padding: 0.6rem 6vw;
     background: var(--ink);
     border-bottom: 1px solid var(--line);
   }
-  .brand { display: inline-flex; align-items: center; gap: 0.65rem; font-size: 1.35rem; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-decoration: none; }
+  .brand { display: inline-flex; align-items: center; gap: 0.65rem; font-size: 1.35rem; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-decoration: none; flex: 0 0 auto; }
   .brand img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
   .brand span { display: inline-block; transform: skewX(-6deg); }
-  .tabs { display: flex; flex-wrap: wrap; gap: 0.2rem; }
-  .tabs a {
-    padding: 0.45rem 0.9rem; text-decoration: none; color: var(--steel); font-weight: 600;
-    border-bottom: 3px solid transparent;
-  }
+  .nav-right { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; min-width: 0; }
+  .tabs { display: flex; align-items: center; flex-wrap: wrap; gap: 0.2rem; }
+  .tabs a { padding: 0.45rem 0.8rem; text-decoration: none; color: var(--steel); font-weight: 600; border-bottom: 3px solid transparent; white-space: nowrap; }
   .tabs a:hover { color: var(--ice); }
   .tabs a[aria-current="page"] { color: var(--ice); border-color: var(--edge); }
+  .login-btn { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; padding: 0.45rem 0.95rem; background: var(--edge); border: 2px solid var(--edge); color: var(--ink); font-weight: 800; text-decoration: none; white-space: nowrap; }
+  .login-btn:hover { background: var(--ice); border-color: var(--ice); color: var(--ink); }
+  .menu-toggle { display: none; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.55rem 0.75rem; background: var(--ink2); border: 1px solid var(--line); color: var(--ice); font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .menu-toggle svg { width: 20px; height: 20px; flex: none; }
 
   /* ---------- Hero ---------- */
+
   .hero {
+
     position: relative; min-height: calc(100vh - 62px); min-height: calc(100svh - 62px);
+
     padding: 5vh 6vw;
+
     overflow: hidden;
+
     display: grid; grid-template-columns: 1.15fr 0.85fr; align-items: center; gap: 2rem;
+
   }
+
   .slash { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
   .slash polygon { fill: var(--ink2); }
+
   .slash line {
+
     stroke: var(--edge); stroke-width: 0.5; vector-effect: non-scaling-stroke;
+
     stroke-dasharray: 160; stroke-dashoffset: 160;
+
     animation: cut 0.9s 0.2s cubic-bezier(.7,0,.2,1) forwards;
+
   }
+
   @keyframes cut { to { stroke-dashoffset: 0; } }
+
   .hero > *:not(.slash) { position: relative; }
+
   .hero h1 {
+
     margin: 0; font-size: clamp(3rem, 9vw, 7.5rem); font-weight: 900; font-style: italic;
+
     letter-spacing: -0.04em; line-height: 0.95; transform: skewX(-6deg); transform-origin: left bottom;
+
   }
+
   .hero p.tag { max-width: 34ch; margin: 1.5rem 0 2rem; font-size: 1.2rem; color: var(--steel); }
+
   .btns { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+
   .btn {
+
     display: inline-flex; align-items: center; gap: 0.5rem;
+
     padding: 0.75rem 1.4rem; border: 2px solid var(--edge); color: var(--ice);
+
     font-weight: 700; text-decoration: none; transition: background 0.15s, color 0.15s;
+
   }
+
   .btn:first-child { background: var(--edge); color: var(--ink); }
+
   .btn:hover { background: var(--ice); border-color: var(--ice); color: var(--ink); }
 
+
+
   .hero-art { justify-self: center; width: min(100%, 460px); aspect-ratio: 1; }
+
   .hero-art::before {
+
     content: ""; position: absolute; inset: 0; transform: translate(14px, 14px);
+
     background: var(--edge); clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%);
+
   }
+
   .hero-art img {
+
     position: relative; display: block; width: 100%; height: 100%; object-fit: cover;
+
     clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%);
+
   }
+
   @media (max-width: 860px) {
+
     .hero { grid-template-columns: 1fr; min-height: auto; padding: 4vh 6vw 6vh; }
+
     .hero-art { order: -1; width: min(62vw, 300px); margin-bottom: 0.5rem; }
+
   }
+
+
 
   /* ---------- Content ---------- */
+
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 6vw 1rem; }
+
   section { padding: 3.5rem 0 0; }
+
   h2 { margin: 0 0 1.2rem; font-size: 1.9rem; letter-spacing: -0.01em; }
+
   h2::after { content: ""; display: block; width: 3rem; height: 3px; background: var(--edge); margin-top: 0.5rem; }
+
   p { margin: 0 0 1rem; max-width: 62ch; }
 
+
+
   .stats { display: flex; flex-wrap: wrap; gap: 1rem; padding-top: 2.5rem; }
+
   .stat { flex: 1 1 150px; padding: 1rem 1.2rem; background: var(--ink2); border-top: 3px solid var(--edge); }
+
   .stat b { display: block; font-size: 2.1rem; line-height: 1.1; font-weight: 800; }
+
   .stat span { color: var(--steel); }
+
   .stat .bar { height: 6px; background: var(--line); margin-top: 0.7rem; }
+
   .stat .bar i { display: block; height: 100%; background: var(--edge); }
+
   .stat small { display: block; margin-top: 0.35rem; color: var(--steel); font-size: 0.85rem; }
 
+
+
   .links { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.7rem; }
+
   .link {
+
     display: flex; justify-content: space-between; align-items: center; gap: 0.4rem 1rem; flex-wrap: wrap;
+
     padding: 0.9rem 1.1rem; background: var(--ink2); border-left: 4px solid var(--steel);
+
     text-decoration: none; transition: border-color 0.15s;
+
   }
+
   .link:hover { border-color: var(--edge); }
+
   .link b { display: inline-flex; align-items: center; gap: 0.65rem; font-size: 1.05rem; }
+
   .link b .ic { color: var(--edge); width: 1.5em; height: 1.5em; }
+
   .link span { color: var(--steel); }
 
+
+
   .row { padding: 0.2rem 0 0.2rem 1.1rem; border-left: 3px solid var(--edge); margin-bottom: 1.6rem; }
+
   .row h3 { margin: 0 0 0.3rem; font-size: 1.2rem; }
+
   .row p { color: var(--steel); margin-bottom: 0.6rem; }
+
   .row a { color: var(--edge); font-weight: 700; }
+
   .status { display: inline-block; margin-left: 0.6rem; padding: 0 0.6rem; border: 1px solid var(--steel); color: var(--steel); font-size: 0.8rem; font-weight: 400; vertical-align: middle; }
 
+
+
   .video { position: relative; aspect-ratio: 16 / 9; background: #000; max-width: 900px; }
+
   .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
+
+
   .comm-grid { display: grid; grid-template-columns: 1fr 350px; gap: 2.5rem; align-items: start; }
+
   #discordWidget { display: block; border: 0; max-width: 100%; background: var(--ink2); }
+
   @media (max-width: 860px) { .comm-grid { grid-template-columns: 1fr; } }
 
+
+
   .note { padding: 1rem 1.2rem; background: var(--ink2); border: 1px dashed var(--steel); color: var(--steel); }
+
   #comments { margin-top: 1.5rem; }
+
+
 
   footer { margin-top: 5rem; padding: 2rem 6vw; border-top: 1px solid var(--line); color: var(--steel); text-align: center; }
 
+
+
   @media (prefers-reduced-motion: reduce) {
+
     .slash line { animation: none; stroke-dashoffset: 0; }
+
     html { scroll-behavior: auto; }
+
   }
+
   @media (max-width: 700px) {
     body { font-size: 16px; }
-    .nav { padding: 0.4rem 4vw; }
-    .tabs { width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .tabs a { white-space: nowrap; padding: 0.7rem 0.9rem; }
+    .nav { padding: 0.55rem 4vw; gap: 0.5rem; }
+    .brand { font-size: 1.1rem; gap: 0.45rem; }
+    .brand img { width: 30px; height: 30px; }
+    .nav-right { gap: 0.45rem; }
+    .menu-toggle { display: inline-flex; }
+    .tabs { display: none; position: absolute; top: 100%; left: 0; right: 0; width: 100%; padding: 0.55rem 4vw 0.9rem; background: var(--ink); border-bottom: 1px solid var(--line); box-shadow: 0 8px 18px rgba(0,0,0,.22); flex-direction: column; align-items: stretch; gap: 0.15rem; }
+    .tabs.menu-open { display: flex; }
+    .tabs a { display: block; padding: 0.7rem 0.8rem; border-bottom: 0; border-left: 3px solid transparent; }
+    .tabs a[aria-current="page"] { border-left-color: var(--edge); background: var(--ink2); }
+    .login-btn { padding: 0.45rem 0.65rem; font-size: 0.9rem; }
     .btns { flex-direction: column; }
     .btn { justify-content: center; width: 100%; }
     .link { padding: 1rem; }
     .stat { flex: 1 1 100%; }
     h2 { font-size: 1.6rem; }
   }
+
 </style>
+
 </head>
+
 <body>
+
+
 
 <nav class="nav" aria-label="Main">
   <a class="brand" href="#home"><img id="brandImg" alt=""><span id="brand"></span></a>
-  <div class="tabs" id="tabs">
-    <a href="#home" data-tab="home">Home</a>
-    <a href="#projects" data-tab="projects">Projects</a>
-    <a href="#community" data-tab="community">Community</a>
-    <a href="community.html">Feed</a>
-    <a href="login.html" id="acct">Login</a>
+  <div class="nav-right">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="tabs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16"></path>
+      </svg>
+      <span>Menu</span>
+    </button>
+    <div class="tabs" id="tabs">
+      <a href="#home" data-tab="home">Home</a>
+      <a href="#projects" data-tab="projects">Projects</a>
+      <a href="#community" data-tab="community">Community</a>
+      <a href="community.html">Feed</a>
+    </div>
+    <a href="login.html" id="acct" class="login-btn">Login</a>
   </div>
 </nav>
 
+
+
 <!-- ============ HOME ============ -->
+
 <div class="tab" id="tab-home">
+
   <header class="hero">
+
     <svg class="slash" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+
       <polygon points="0,100 100,18 100,100"></polygon>
+
       <line x1="0" y1="100" x2="100" y2="18"></line>
+
     </svg>
+
     <div class="hero-text">
+
       <h1 id="siteName"></h1>
+
       <p class="tag" id="tagline"></p>
+
       <div class="btns" id="heroButtons"></div>
+
     </div>
+
     <div class="hero-art" id="heroArt"><img id="heroImg" alt="BladeLow avatar"></div>
+
   </header>
+
   <div class="wrap">
+
     <div class="stats" id="stats"></div>
+
     <section><h2>About</h2><div id="about"></div></section>
+
     <section><h2>Links</h2><div class="links" id="socials"></div></section>
+
     <section id="videoSec"><h2 id="videoTitle">Latest video</h2><div class="video" id="video"></div></section>
+
   </div>
+
 </div>
+
+
 
 <!-- ============ PROJECTS ============ -->
+
 <div class="tab" id="tab-projects" hidden>
+
   <div class="wrap">
+
     <section id="addonSec"><h2>Addons and projects</h2><div id="addons"></div></section>
+
     <section id="upcomingSec"><h2>Upcoming content</h2><div id="upcoming"></div></section>
+
   </div>
+
 </div>
 
+
+
 <!-- ============ COMMUNITY ============ -->
+
 <div class="tab" id="tab-community" hidden>
+
   <div class="wrap">
+
     <div class="comm-grid" id="commGrid">
+
       <div>
+
         <section>
+
           <h2>Community</h2>
+
           <p id="communityText"></p>
+
           <div class="btns" id="communityButtons"></div>
+
         </section>
+
         <section id="teamSec"><h2>Team</h2><div class="links" id="team"></div></section>
+
         <section>
+
           <h2>Share your ideas</h2>
+
           <p>Want to suggest something for my content? Post it on the <a href="community.html" style="color:var(--edge);font-weight:700">community feed</a> or join the Discord.</p>
+
         </section>
+
       </div>
+
       <aside id="widgetBox">
+
         <section>
+
           <h2>Live on Discord</h2>
+
           <iframe id="discordWidget" title="Discord server widget" width="350" height="500" frameborder="0"
+
             sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+
         </section>
+
       </aside>
+
     </div>
+
   </div>
+
 </div>
+
+
 
 <footer id="footer"></footer>
 
+
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
 <script src="config.js"></script>
+
 <script src="auth.js"></script>
+
 <script>
+
 (async () => {
+
   await loadRemoteConfig();
+
   // Ye code sirf config.js ka data page pe lagata hai. Isse chhedne ki zarurat nahi.
+
   const $ = id => document.getElementById(id);
+
   function el(tag, attrs, text) {
+
     const e = document.createElement(tag);
+
     for (const k in (attrs || {})) e.setAttribute(k, attrs[k]);
+
     if (text) e.textContent = text;
+
     return e;
+
   }
+
   const isExternal = u => u && u !== "#";
+
   function openNew(a, url) { if (isExternal(url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; } }
 
+
+
   // ---------- Icons (simple, apne draw kiye hue) ----------
+
   const ICONS = {
+
     youtube: '<rect x="2" y="5" width="20" height="14" rx="4" fill="currentColor"/><path d="M10 9l5.2 3-5.2 3z" fill="var(--ink)"/>',
+
     instagram: '<rect x="3" y="3" width="18" height="18" rx="5.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/>',
+
     discord: '<path d="M5.2 6.2C7 5 9.3 4.4 12 4.4s5 .6 6.8 1.8c1.5 2.9 2.2 6.1 2 9.9-1.3 1-2.9 1.7-4.5 2.1l-1-1.6c.5-.2 1-.4 1.4-.7-2.6 1.1-5.6 1.1-8.2 0 .4.3.9.5 1.4.7l-1 1.6c-1.6-.4-3.2-1.1-4.5-2.1-.2-3.8.5-7 2-9.9z" fill="currentColor"/><circle cx="9" cy="12" r="1.6" fill="var(--ink)"/><circle cx="15" cy="12" r="1.6" fill="var(--ink)"/>',
+
     curseforge: '<path d="M3 5h18l-2.2 3.2h-4.1c-.4 1.3-1.3 2.3-2.7 3 1.2.5 2.1 1.3 2.6 2.6l1.2 3.2H19V19H5v-2h2.7l1.2-3.2c.5-1.3 1.4-2.1 2.6-2.6-1.4-.7-2.3-1.7-2.7-3H5z" fill="currentColor"/>',
+
     reddit: '<ellipse cx="12" cy="14" rx="8" ry="6" fill="currentColor"/><circle cx="18.6" cy="9.2" r="2" fill="currentColor"/><circle cx="5.4" cy="9.2" r="2" fill="currentColor"/><circle cx="9" cy="13.4" r="1.3" fill="var(--ink)"/><circle cx="15" cy="13.4" r="1.3" fill="var(--ink)"/><path d="M12 8l1.2-4 4 1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M9.5 16.4c1.4 1 3.6 1 5 0" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round"/>',
+
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+
   };
+
   function icon(name) {
+
     const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
     s.setAttribute("viewBox", "0 0 24 24");
+
     s.setAttribute("class", "ic");
+
     s.setAttribute("aria-hidden", "true");
+
     s.innerHTML = ICONS[name] || ICONS.link;
+
     return s;
+
   }
+
+
 
   // ---------- Theme ----------
+
   const r = document.documentElement.style, T = SITE.theme || {};
+
   if (T.accent) r.setProperty("--edge", T.accent);
+
   if (T.muted) r.setProperty("--steel", T.muted);
+
   if (T.bg) r.setProperty("--ink", T.bg);
+
   if (T.panel) r.setProperty("--ink2", T.panel);
+
   if (T.text) r.setProperty("--ice", T.text);
 
+
+
   document.title = SITE.pageTitle || SITE.name;
+
   $("brand").textContent = SITE.name;
+
   $("siteName").textContent = SITE.name;
+
   $("tagline").textContent = SITE.tagline;
+
   $("footer").textContent = SITE.footer;
+
     (SITE.navLinks || []).forEach(l => {
+
     const a = el("a", { href: l.url }, l.text);
+
     if (/^https?:/.test(l.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+
     $("tabs").appendChild(a);
+
   });
+
   if ((SITE.posts || []).length) {
+
     const a = el("a", { href: "posts.html" }, "Updates"); $("tabs").appendChild(a);
+
   }
+
   (SITE.pages || []).forEach(page => {
+
     const a = el("a", { href: "page.html?slug=" + encodeURIComponent(page.slug || "") }, page.title || "Page");
+
     $("tabs").appendChild(a);
+
   });
+
   if (SITE.avatar) {
+
     $("brandImg").src = SITE.avatar;
+
     $("heroImg").src = SITE.avatar;
+
   } else {
+
     $("brandImg").remove();
+
     $("heroArt").remove();
+
   }
+
+
 
   // ---------- Home ----------
+
   SITE.heroButtons.forEach(b => {
+
     const a = el("a", { class: "btn", href: b.url });
+
     a.appendChild(icon(b.icon));
+
     a.appendChild(document.createTextNode(b.text));
+
     openNew(a, b.url); $("heroButtons").appendChild(a);
+
   });
 
-  SITE.about.forEach(t => $("about").appendChild(el("p", {}, t)));
+
+
+  SITE.about.filter(t => t && t.trim()).forEach(t => $("about").appendChild(el("p", {}, t)));
+
+
 
   SITE.socials.forEach(s => {
+
     const a = el("a", { class: "link", href: s.url });
+
     const b = el("b");
+
     b.appendChild(icon(s.icon));
+
     b.appendChild(document.createTextNode(s.name));
+
     a.appendChild(b);
+
     a.appendChild(el("span", {}, s.note || ""));
+
     openNew(a, s.url); $("socials").appendChild(a);
+
   });
+
+
 
   // ---------- Stats ----------
+
   const fmt = n => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+
   function addStat(label, value) {
+
     const box = el("div", { class: "stat" });
+
     const b = el("b", {}, value);
+
     box.appendChild(b);
+
     box.appendChild(el("span", {}, label));
+
     $("stats").appendChild(box);
+
     return { box, b };
+
   }
+
   const S = SITE.stats || {};
+
   // Subscriber goal ka progress bar
+
   function goalBar(st, n) {
+
     if (!S.goal || !n) return;
+
     if (!st.fill) {
+
       const bar = el("div", { class: "bar" });
+
       st.fill = document.createElement("i");
+
       bar.appendChild(st.fill);
+
       st.note = el("small");
+
       st.box.appendChild(bar);
+
       st.box.appendChild(st.note);
+
     }
+
     const pct = Math.min(100, Math.round(n / S.goal * 100));
+
     st.fill.style.width = pct + "%";
+
     st.note.textContent = pct + "% of the way to " + fmt(S.goal);
+
   }
+
   if (S.subscribers || S.youtubeApiKey) {
+
     const st = addStat("YouTube subscribers", S.subscribers || "...");
+
     goalBar(st, parseInt(String(S.subscribers).replace(/,/g, ""), 10));
+
     if (S.youtubeApiKey && SITE.youtubeChannelId) {
+
       fetch("https://www.googleapis.com/youtube/v3/channels?part=statistics&id=" + encodeURIComponent(SITE.youtubeChannelId) + "&key=" + encodeURIComponent(S.youtubeApiKey))
+
         .then(x => x.json())
+
         .then(d => {
+
           const s = d.items && d.items[0] && d.items[0].statistics;
+
           if (s && !s.hiddenSubscriberCount) { st.b.textContent = fmt(+s.subscriberCount); goalBar(st, +s.subscriberCount); }
+
           else if (!S.subscribers) st.box.remove();
+
         })
+
         .catch(() => { if (!S.subscribers) st.box.remove(); });
+
     }
+
   }
+
   if (S.discordMembers || S.discordInviteCode) {
+
     const st = addStat("Discord members", S.discordMembers || "...");
+
     if (S.discordInviteCode) {
+
       fetch("https://discord.com/api/v9/invites/" + encodeURIComponent(S.discordInviteCode) + "?with_counts=true")
+
         .then(x => x.json())
+
         .then(d => {
+
           if (d.approximate_member_count) st.b.textContent = fmt(d.approximate_member_count);
+
           else if (!S.discordMembers) st.box.remove();
+
         })
+
         .catch(() => { if (!S.discordMembers) st.box.remove(); });
+
     }
+
   }
+
   if (SITE.addons.length) addStat("Addons released", String(SITE.addons.length));
 
+
+
   // ---------- Latest video ----------
+
   // Video ID ya poori YouTube link se 11 character ki ID nikalta hai
+
   function ytId(s) {
+
     const m = String(s || "").match(/(?:v=|youtu\.be\/|embed\/|shorts\/|^)([A-Za-z0-9_-]{11})(?:[?&#\/]|$)/);
+
     return m ? m[1] : "";
+
   }
+
   const cid = SITE.youtubeChannelId;
+
   const fid = ytId(SITE.featuredVideoId);
+
   const plRaw = String(SITE.featuredPlaylistId || "").trim();
+
   const plm = plRaw.match(/list=([A-Za-z0-9_-]+)/);
+
   const plid = plm ? plm[1] : plRaw;
+
   // YouTube ke automatic playlists: popular videos, sirf videos (Shorts ke bina), sab uploads
+
   const FEEDS = { popular: "UULP", videos: "UULF", uploads: "UU" };
+
   let vsrc = "";
+
   if (fid) {
+
     vsrc = "https://www.youtube.com/embed/" + fid;
+
     $("videoTitle").textContent = "Featured video";
+
   } else if (plid) {
+
     vsrc = "https://www.youtube.com/embed/videoseries?list=" + encodeURIComponent(plid);
+
     $("videoTitle").textContent = "Featured video";
+
   } else if (cid && cid.indexOf("UC") === 0) {
+
     const feed = SITE.videoFeed || "popular";
+
     vsrc = "https://www.youtube.com/embed/videoseries?list=" + (FEEDS[feed] || FEEDS.popular) + cid.slice(2);
+
     $("videoTitle").textContent = feed === "popular" ? "Top video" : "Latest video";
+
   }
+
   if (vsrc) {
+
     $("video").appendChild(el("iframe", {
+
       src: vsrc, title: "BladeLow video", loading: "lazy", allowfullscreen: "",
+
       referrerpolicy: "strict-origin-when-cross-origin",
+
       allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+
     }));
+
   } else {
+
     $("videoSec").remove();
+
   }
+
+
 
   // ---------- Projects ----------
+
   if (!SITE.addons.length) $("addonSec").remove();
+
   SITE.addons.forEach(x => {
+
     const row = el("div", { class: "row" });
+
     row.appendChild(el("h3", {}, x.name));
+
     row.appendChild(el("p", {}, x.desc));
+
     const a = el("a", { href: x.url }, "View on CurseForge");
+
     openNew(a, x.url); row.appendChild(a);
+
     $("addons").appendChild(row);
+
   });
+
+
 
   if (!SITE.upcoming.length) $("upcomingSec").remove();
+
   SITE.upcoming.forEach(x => {
+
     const row = el("div", { class: "row" });
+
     const h = el("h3", {}, x.title);
+
     h.appendChild(el("span", { class: "status" }, x.status));
+
     row.appendChild(h);
+
     row.appendChild(el("p", {}, x.desc));
+
     $("upcoming").appendChild(row);
+
   });
+
+
 
   // ---------- Community ----------
+
   $("communityText").textContent = SITE.communityText;
+
   function commBtn(text, url, ic) {
+
     const a = el("a", { class: "btn", href: url });
+
     a.appendChild(icon(ic));
+
     a.appendChild(document.createTextNode(text));
+
     openNew(a, url);
+
     $("communityButtons").appendChild(a);
+
   }
+
   commBtn("Join the Discord", SITE.discordInvite, "discord");
+
   if (SITE.redditUrl) commBtn("Open the subreddit", SITE.redditUrl, "reddit");
 
+
+
   // Team (owner / admin / mod)
+
   const team = SITE.team || [];
+
   if (!team.length) $("teamSec").remove();
+
   team.forEach(m => {
+
     const row = el("div", { class: "link" });
+
     row.appendChild(el("b", {}, m.name));
+
     row.appendChild(el("span", {}, m.role));
+
     $("team").appendChild(row);
+
   });
 
+
+
   // Discord live widget (server ID chahiye, aur Discord me Widget on hona chahiye)
+
   if (SITE.discordServerId) {
+
     $("discordWidget").src = "https://discord.com/widget?id=" + encodeURIComponent(SITE.discordServerId) + "&theme=dark";
+
   } else {
+
     $("widgetBox").remove();
+
     $("commGrid").style.gridTemplateColumns = "1fr";
+
   }
 
+
+
   // ---------- Tabs ----------
+
   const TABS = ["home", "projects", "community"];
+
   function showTab() {
+
     let t = location.hash.slice(1);
+
     if (TABS.indexOf(t) < 0) t = "home";
+
     TABS.forEach(n => { $("tab-" + n).hidden = (n !== t); });
+
     document.querySelectorAll("#tabs a").forEach(a => {
+
       if (a.dataset.tab === t) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+
     });
+
     window.scrollTo(0, 0);
+
   }
+
   window.addEventListener("hashchange", showTab);
+
   showTab();
+
+  // Mobile menu; Login stays visible beside the menu button.
+  const menuToggle = $("menuToggle");
+  const tabs = $("tabs");
+  menuToggle.addEventListener("click", () => {
+    const isOpen = tabs.classList.toggle("menu-open");
+    menuToggle.setAttribute("aria-expanded", String(isOpen));
+  });
+  tabs.addEventListener("click", event => {
+    if (event.target.closest("a")) {
+      tabs.classList.remove("menu-open");
+      menuToggle.setAttribute("aria-expanded", "false");
+    }
+  });
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 700) {
+      tabs.classList.remove("menu-open");
+      menuToggle.setAttribute("aria-expanded", "false");
+    }
+  });
+
   fillAcct();
+
 })();
+
 </script>
+
 </body>
+
 </html>
