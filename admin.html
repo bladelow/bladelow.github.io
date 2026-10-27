@@ -78,8 +78,13 @@
   <main id="panel"></main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="auth.js"></script>
 <script>
+(async () => {
+  await loadRemoteConfig();
+  if (!(await requireAdmin())) return;
   if (typeof SITE === "undefined") {
     document.getElementById("panel").textContent = "config.js could not be loaded. Keep admin.html in the same folder as config.js.";
     throw new Error("config.js missing");
@@ -99,7 +104,7 @@
   state.theme = Object.assign({ accent: "#57d13d", muted: "#9db89a", bg: "#0c130e", panel: "#15201a", text: "#eef5ec" }, state.theme || {});
   state.stats = Object.assign({ subscribers: "", discordMembers: "", goal: "", youtubeApiKey: "", discordInviteCode: "" }, state.stats || {});
   state.giscus = Object.assign({ repo: "", repoId: "", category: "", categoryId: "" }, state.giscus || {});
-  ["heroButtons", "about", "socials", "addons", "upcoming", "team"].forEach(k => { if (!Array.isArray(state[k])) state[k] = []; });
+  ["heroButtons", "about", "socials", "addons", "upcoming", "team", "pages", "posts"].forEach(k => { if (!Array.isArray(state[k])) state[k] = []; });
   ["name", "pageTitle", "tagline", "avatar", "footer", "youtubeChannelId", "featuredVideoId", "featuredPlaylistId",
    "discordInvite", "discordServerId", "redditUrl", "communityText", "ideasIntro"].forEach(k => { if (state[k] === undefined) state[k] = ""; });
   if (!state.videoFeed) state.videoFeed = "popular";
@@ -291,6 +296,28 @@
         { label: "Description", key: "desc", type: "textarea", rows: 2 }
       ], { title: "New plan", status: "Planning", desc: "" }, it => it.title || "Plan");
     },
+    "Pages": p => {
+      head(p, "Custom pages", "Yahan se new pages banao. Publish karne ke baad page.html?slug=your-slug se khulega.");
+      const box = el("div"); p.appendChild(box);
+      listEditor(box, state.pages, [
+        { label: "Page title", key: "title" },
+        { label: "URL slug (English, no spaces)", key: "slug", hint: "Example: about, rules, contact" },
+        { label: "Short description", key: "description", type: "textarea", rows: 2 },
+        { label: "Page content (plain text; blank lines create paragraphs)", key: "content", type: "textarea", rows: 8 }
+      ], { title: "New page", slug: "new-page", description: "", content: "Write your page here." }, it => it.title || "Untitled page");
+    },
+    "Posts": p => {
+      head(p, "Posts and updates", "New project updates, announcements, and blog posts yahan add karo.");
+      const box = el("div"); p.appendChild(box);
+      listEditor(box, state.posts, [
+        { label: "Post title", key: "title" },
+        { label: "URL slug (English, no spaces)", key: "slug" },
+        { label: "Date label", key: "date", hint: "Example: 27 Oct 2026" },
+        { label: "Summary", key: "summary", type: "textarea", rows: 2 },
+        { label: "Post content (plain text; blank lines create paragraphs)", key: "content", type: "textarea", rows: 8 },
+        { label: "Project / post link (optional)", key: "url" }
+      ], { title: "New post", slug: "new-post", date: "", summary: "", content: "", url: "" }, it => it.title || "Untitled post");
+    },
     "Video": p => {
       head(p, "Home page video", "Kaunsa video home page pe chale. Upar se neeche priority: video, playlist, feed.");
       p.appendChild(field("Featured video (link ya ID)", state, "featuredVideoId", { hint: "Ek specific video hamesha dikhane ke liye." }));
@@ -312,117 +339,48 @@
         { label: "Role", key: "role", type: "select", options: ["Owner", "Admin", "Mod"] }
       ], { name: "New member", role: "Mod" }, it => (it.name || "Member") + " (" + (it.role || "") + ")");
     },
-    "Ideas": p => {
-      head(p, "Ideas board", "Giscus ki settings. giscus.app se milti hai.");
-      p.appendChild(field("Intro text", state, "ideasIntro", { type: "textarea", rows: 2 }));
-      const grid = el("div", { class: "row2" });
-      grid.appendChild(field("Repo", state.giscus, "repo", { hint: "owner/repo" }));
-      grid.appendChild(field("Repo ID", state.giscus, "repoId"));
-      grid.appendChild(field("Category", state.giscus, "category"));
-      grid.appendChild(field("Category ID", state.giscus, "categoryId"));
-      p.appendChild(grid);
+    "Moderation": async p => {
+      head(p, "Community posts", "Users ke posts: hide, delete ya user ko ban karo.");
+      const box = el("div"); p.appendChild(box);
+      const s = getSb();
+      const { data } = await s.from("posts").select("*, profiles(username,banned)").order("created_at", { ascending: false }).limit(100);
+      if (!data || !data.length) { box.textContent = "Abhi koi post nahi."; return; }
+      data.forEach(x => {
+        const card = el("div", { class: "card" });
+        const hd = el("div", { class: "cardhead" });
+        hd.appendChild(el("b", {}, (x.profiles ? x.profiles.username : "user") + (x.hidden ? " (hidden)" : "")));
+        const acts = el("div", { class: "acts" });
+        const act = (t, fn, d) => { const b = el("button", { type: "button", class: "mini" + (d ? " danger" : "") }, t); b.addEventListener("click", async () => { await fn(); show("Moderation"); }); acts.appendChild(b); };
+        act(x.hidden ? "Show" : "Hide", () => s.from("posts").update({ hidden: !x.hidden }).eq("id", x.id));
+        act("Delete", () => s.from("posts").delete().eq("id", x.id), true);
+        act(x.profiles && x.profiles.banned ? "Unban" : "Ban", () => s.from("profiles").update({ banned: !(x.profiles && x.profiles.banned) }).eq("id", x.user_id), true);
+        hd.appendChild(acts); card.appendChild(hd);
+        card.appendChild(el("p", {}, x.title + " - " + x.body));
+        box.appendChild(card);
+      });
     },
     "Publish": p => {
-      head(p, "Publish", "Badlav site pe daalne ke 2 tareeke.");
-      p.appendChild(el("div", { class: "warn" },
-        "Tareeka 1: Download config.js dabao aur use GitHub repo me purani config.js ki jagah upload kar. Token ki zarurat nahi.\n" +
-        "Tareeka 2: GitHub token daal ke seedha Publish dabao. Token sirf tere browser se GitHub ko jata hai, site ki kisi file me nahi likha jata."));
-
+      head(p, "Save", "Save dabate hi site pe live ho jata hai. GitHub token ki zarurat nahi.");
       const msg = el("div", { class: "msg", style: "display:none" });
-      const setMsg = (t, kind) => { msg.style.display = "block"; msg.textContent = t; msg.className = "msg " + (kind || ""); };
-
-      const host = location.hostname;
-      const pub = {
-        owner: lsGet("pub_owner") || (host.endsWith(".github.io") ? host.split(".")[0] : ""),
-        repo: lsGet("pub_repo") || (host.endsWith(".github.io") ? host : ""),
-        branch: lsGet("pub_branch") || "main",
-        path: lsGet("pub_path") || "config.js",
-        token: lsGet("pub_token")
-      };
-      const grid = el("div", { class: "row2" });
-      grid.appendChild(field("GitHub username", pub, "owner"));
-      grid.appendChild(field("Repository name", pub, "repo"));
-      grid.appendChild(field("Branch", pub, "branch"));
-      grid.appendChild(field("File path", pub, "path"));
-      p.appendChild(grid);
-      p.appendChild(field("GitHub token", pub, "token", { type: "password", hint: "Fine-grained token: sirf isi repo ke liye, Contents = Read and write. Kisi ko mat dena." }));
-
-      const remLabel = el("label", { class: "field" });
-      const rem = el("input", { type: "checkbox" });
-      rem.checked = !!lsGet("pub_token");
-      remLabel.appendChild(rem);
-      remLabel.appendChild(document.createTextNode(" Is browser me token yaad rakh (sirf apne personal computer pe)"));
-      p.appendChild(remLabel);
-
-      const out = el("textarea", { id: "out", readonly: "readonly", "aria-label": "Generated config.js" });
-      function refreshOut() { out.value = buildConfig(); }
-
-      const b1 = el("button", { type: "button", class: "btn" }, "Publish to GitHub");
-      const b2 = el("button", { type: "button", class: "btn ghost" }, "Download config.js");
-      const b3 = el("button", { type: "button", class: "btn ghost" }, "Copy config.js");
-      const btns = el("div", { class: "btns" });
-      [b1, b2, b3].forEach(b => btns.appendChild(b));
-      p.appendChild(btns);
-      p.appendChild(msg);
-      p.appendChild(el("h3", {}, "Generated config.js"));
-      p.appendChild(out);
-      refreshOut();
-
-      function saveLs() {
-        lsSet("pub_owner", pub.owner); lsSet("pub_repo", pub.repo);
-        lsSet("pub_branch", pub.branch); lsSet("pub_path", pub.path);
-        if (rem.checked) lsSet("pub_token", pub.token); else lsSet("pub_token", "");
-      }
-
-      b2.addEventListener("click", () => {
-        refreshOut();
-        const blob = new Blob([buildConfig()], { type: "text/javascript" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "config.js";
-        document.body.appendChild(a); a.click(); a.remove();
-        setMsg("config.js download ho gaya. Isse GitHub repo me purani config.js ki jagah upload kar de.", "ok");
-      });
-
-      b3.addEventListener("click", async () => {
-        refreshOut();
-        try { await navigator.clipboard.writeText(out.value); }
-        catch (e) { out.select(); document.execCommand("copy"); }
-        setMsg("Copy ho gaya. GitHub pe config.js edit karke sab replace kar de.", "ok");
-      });
-
+      const setMsg = (t, k) => { msg.style.display = "block"; msg.textContent = t; msg.className = "msg " + (k || ""); };
+      const b1 = el("button", { type: "button", class: "btn" }, "Save to website");
+      const b2 = el("button", { type: "button", class: "btn ghost" }, "Download backup config.js");
       b1.addEventListener("click", async () => {
-        if (!pub.owner || !pub.repo || !pub.token) { setMsg("Username, repository aur token teeno bhar.", "err"); return; }
-        refreshOut(); saveLs();
-        b1.disabled = true; setMsg("Publish ho raha hai...");
-        try {
-          const api = "https://api.github.com/repos/" + encodeURIComponent(pub.owner) + "/" + encodeURIComponent(pub.repo) +
-            "/contents/" + pub.path.split("/").map(encodeURIComponent).join("/");
-          const headers = { Authorization: "Bearer " + pub.token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
-          let sha;
-          const r1 = await fetch(api + "?ref=" + encodeURIComponent(pub.branch), { headers: headers });
-          if (r1.ok) sha = (await r1.json()).sha;
-          else if (r1.status !== 404) throw new Error("File padh nahi paya (" + r1.status + "). Token, username aur repository check kar.");
-          const body = {
-            message: "Update " + pub.path + " from admin panel",
-            content: btoa(unescape(encodeURIComponent(buildConfig()))),
-            branch: pub.branch
-          };
-          if (sha) body.sha = sha;
-          const r2 = await fetch(api, { method: "PUT", headers: Object.assign({ "Content-Type": "application/json" }, headers), body: JSON.stringify(body) });
-          if (!r2.ok) {
-            let m = ""; try { m = (await r2.json()).message; } catch (e) {}
-            throw new Error("Publish fail hua (" + r2.status + "). " + (m || ""));
-          }
-          dirty = false;
-          $("status").textContent = "Published";
-          $("status").className = "";
-          setMsg("Publish ho gaya. Site 1-2 minute me update ho jayegi (Ctrl + F5 se refresh kar).", "ok");
-        } catch (e) {
-          setMsg(e.message || String(e), "err");
-        }
+        b1.disabled = true;
+        const clean = JSON.parse(JSON.stringify(state)); delete clean.supabaseUrl; delete clean.supabaseAnonKey;
+        const { error } = await getSb().from("site_config").upsert({ id: 1, data: clean });
         b1.disabled = false;
+        if (error) { setMsg("Save fail: " + error.message, "err"); return; }
+        dirty = false; $("status").textContent = "Saved"; $("status").className = "";
+        setMsg("Save ho gaya. Site refresh karke dekh.", "ok");
       });
+      b2.addEventListener("click", () => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([buildConfig()], { type: "text/javascript" }));
+        a.download = "config.js"; document.body.appendChild(a); a.click(); a.remove();
+      });
+      const btns = el("div", { class: "btns" }); btns.appendChild(b1); btns.appendChild(b2);
+      p.appendChild(btns); p.appendChild(msg);
     }
   };
 
@@ -446,6 +404,7 @@
     $("nav").appendChild(b);
   });
   show(names[0]);
+})();
 </script>
 </body>
 </html>
