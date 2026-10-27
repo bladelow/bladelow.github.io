@@ -234,11 +234,11 @@
   // ---------- Sections ----------
   const SECTIONS = {
     "General": p => {
-      head(p, "General", "Site ka naam, tagline aur colors.");
+      head(p, "General", "Site name, tagline aur colors.");
       p.appendChild(field("Site name", state, "name"));
       p.appendChild(field("Browser tab title", state, "pageTitle"));
       p.appendChild(field("Tagline", state, "tagline", { type: "textarea", rows: 2 }));
-      p.appendChild(field("Profile picture file", state, "avatar", { hint: "File ka naam, jaise pfp.jpg. Nayi photo ke liye GitHub repo me wahi naam se file replace kar de." }));
+      p.appendChild(field("Profile picture file", state, "avatar", { hint: "File name, e.g., pfp.jpg. For a new photo, replace the file in the GitHub repo with one using the same name." }));
       p.appendChild(field("Footer text", state, "footer"));
       p.appendChild(el("h3", {}, "Colors"));
       const grid = el("div", { class: "row2" });
@@ -247,7 +247,7 @@
       p.appendChild(grid);
     },
     "Hero buttons": p => {
-      head(p, "Hero buttons", "Home page ke top ke bade buttons. Pehla button filled dikhta hai.");
+      head(p, "Hero buttons", "Large buttons at the top of the home page. The first button appears filled.");
       const box = el("div"); p.appendChild(box);
       listEditor(box, state.heroButtons, [
         { label: "Button text", key: "text" },
@@ -256,7 +256,7 @@
       ], { text: "New button", url: "#", icon: "link" }, it => it.text || "Button");
     },
     "About": p => {
-      head(p, "About", "Home page ka intro. Har item ek paragraph hai.");
+      head(p, "About", "Home page intro. Each item is a paragraph..");
       const box = el("div"); p.appendChild(box);
       textList(box, state.about);
     },
@@ -271,14 +271,14 @@
       ], { name: "New link", url: "#", note: "", icon: "link" }, it => it.name || "Link");
     },
     "Stats": p => {
-      head(p, "Stats", "Home page ke numbers. Auto-fetch na chale to manual numbers dikhte hai.");
+      head(p, "Stats", "Numbers on the home page. If auto-fetch fails, the numbers are displayed manually..");
       const grid = el("div", { class: "row2" });
       grid.appendChild(field("YouTube subscribers (manual)", state.stats, "subscribers"));
       grid.appendChild(field("Discord members (manual)", state.stats, "discordMembers"));
-      grid.appendChild(field("Subscriber goal", state.stats, "goal", { type: "number", hint: "Progress bar ke liye, jaise 1000. Khali = bar nahi." }));
+      grid.appendChild(field("Subscriber goal", state.stats, "goal", { type: "number", hint: "For a progress bar for example, 1000 an empty state means no bar is displayed." }));
       grid.appendChild(field("Discord invite code", state.stats, "discordInviteCode", { hint: "discord.gg/abc123 ho to abc123. Invite never-expire wala ho." }));
       p.appendChild(grid);
-      p.appendChild(field("YouTube API key (optional)", state.stats, "youtubeApiKey", { hint: "Ye key site ki public file me jaati hai, isliye Google Cloud me HTTP referrer se restrict kar." }));
+      p.appendChild(field("YouTube API key (optional)", state.stats, "youtubeApiKey", { hint: "This goes into the site's public files, so restrict it in Google Cloud using the HTTP Referer." }));
     },
     "Projects": p => {
       head(p, "Addons and projects", "Projects tab ke addons.");
@@ -292,12 +292,12 @@
       const box2 = el("div"); p.appendChild(box2);
       listEditor(box2, state.upcoming, [
         { label: "Title", key: "title" },
-        { label: "Status", key: "status", hint: "Jaise Planning, In progress, Done" },
+        { label: "Status", key: "status", hint: "Like planning, in progress, both" },
         { label: "Description", key: "desc", type: "textarea", rows: 2 }
       ], { title: "New plan", status: "Planning", desc: "" }, it => it.title || "Plan");
     },
     "Pages": p => {
-      head(p, "Custom pages", "Yahan se new pages banao. Publish karne ke baad page.html?slug=your-slug se khulega.");
+      head(p, "Custom pages", "Create new pages here. Once published, a page will be accessible via `page.html?slug=your-slug`.");
       const box = el("div"); p.appendChild(box);
       listEditor(box, state.pages, [
         { label: "Page title", key: "title" },
@@ -307,7 +307,7 @@
       ], { title: "New page", slug: "new-page", description: "", content: "Write your page here." }, it => it.title || "Untitled page");
     },
     "Posts": p => {
-      head(p, "Posts and updates", "New project updates, announcements, and blog posts yahan add karo.");
+      head(p, "Posts and updates", "New project updates, announcements, and blog posts add here.");
       const box = el("div"); p.appendChild(box);
       listEditor(box, state.posts, [
         { label: "Post title", key: "title" },
@@ -332,7 +332,7 @@
       p.appendChild(field("Discord server ID", state, "discordServerId", { hint: "Live widget ke liye. Discord me Widget on hona chahiye." }));
       p.appendChild(field("Subreddit link", state, "redditUrl", { hint: "Khali = button nahi dikhega." }));
       p.appendChild(el("h3", {}, "Team"));
-      p.appendChild(el("p", { class: "desc" }, "Ye site pe sirf dikhne wali list hai. Asli roles aur permissions Discord aur Reddit me set hote hai."));
+      p.appendChild(el("p", { class: "desc" }, "This list on the site is for display purposes only. The actual roles and permissions are set within Discord and Reddit."));
       const box = el("div"); p.appendChild(box);
       listEditor(box, state.team, [
         { label: "Name", key: "name" },
@@ -340,7 +340,7 @@
       ], { name: "New member", role: "Mod" }, it => (it.name || "Member") + " (" + (it.role || "") + ")");
     },
     "Moderation": async p => {
-      head(p, "Community posts", "Users ke posts: hide, delete ya user ko ban karo.");
+      head(p, "Community posts", "User posts: Hide, delete, or ban the user.");
       const box = el("div"); p.appendChild(box);
       const s = getSb();
       const { data } = await s.from("posts").select("*, profiles(username,banned)").order("created_at", { ascending: false }).limit(100);
@@ -360,7 +360,7 @@
       });
     },
     "Publish": p => {
-      head(p, "Save", "Save dabate hi site pe live ho jata hai. GitHub token ki zarurat nahi.");
+      head(p, "Save", "As soon as you hit save, it goes live on the site. No GitHub token is required.");
       const msg = el("div", { class: "msg", style: "display:none" });
       const setMsg = (t, k) => { msg.style.display = "block"; msg.textContent = t; msg.className = "msg " + (k || ""); };
       const b1 = el("button", { type: "button", class: "btn" }, "Save to website");
@@ -372,7 +372,7 @@
         b1.disabled = false;
         if (error) { setMsg("Save fail: " + error.message, "err"); return; }
         dirty = false; $("status").textContent = "Saved"; $("status").className = "";
-        setMsg("Save ho gaya. Site refresh karke dekh.", "ok");
+        setMsg("Save successful. Refresh the site to see the changes.", "ok");
       });
       b2.addEventListener("click", () => {
         const a = document.createElement("a");
