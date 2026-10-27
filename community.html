@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Community feed - BladeLow</title><link rel="icon" href="pfp.jpg">
+<style>
+:root{--ink:#0c130e;--ink2:#15201a;--steel:#9db89a;--ice:#eef5ec;--edge:#57d13d;--line:#243428;--bad:#ff6b5e}
+*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--ice);font:17px/1.6 "Segoe UI",system-ui,sans-serif}
+header{display:flex;justify-content:space-between;gap:.5rem;padding:.8rem 5vw;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--ink)}
+header a{color:var(--ice);font-weight:700;text-decoration:none;padding:.4rem 0}
+main{max-width:720px;margin:0 auto;padding:1.2rem 5vw 4rem}
+input,textarea{width:100%;padding:.7rem;background:var(--ink2);color:var(--ice);border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:.6rem}
+.btn{padding:.7rem 1.3rem;background:var(--edge);color:var(--ink);border:0;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}
+.post{background:var(--ink2);border:1px solid var(--line);border-left:3px solid var(--edge);border-radius:8px;padding:1rem;margin-bottom:1rem}
+.post h3{margin:.2rem 0}.post p{margin:.4rem 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.meta{display:flex;align-items:center;gap:.5rem;color:var(--steel);font-size:.85rem}.meta img{width:24px;height:24px;border-radius:50%}
+.del{background:none;border:1px solid var(--line);color:var(--steel);border-radius:6px;padding:.25rem .6rem;cursor:pointer;margin-left:auto}
+#msg{color:var(--bad)}
+</style></head><body>
+<header><a href="index.html">← BladeLow</a><a id="acct" href="login.html">Login</a></header>
+<main>
+<h1>Community feed</h1>
+<div id="compose" hidden>
+  <input id="ti" maxlength="120" placeholder="Title"><textarea id="bo" rows="4" maxlength="3000" placeholder="Kuch share kar..."></textarea>
+  <button class="btn" id="go">Post</button> <span id="msg"></span>
+</div>
+<p id="loginHint" hidden><a href="login.html" style="color:var(--edge);font-weight:700">Discord se login kar</a> post karne ke liye.</p>
+<div id="feed" style="margin-top:1.5rem"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script><script src="auth.js"></script>
+<script>
+(async()=>{
+  const $=id=>document.getElementById(id), s=getSb();
+  if(!s){$("feed").textContent="Setup baaki hai (SETUP.md dekh).";return}
+  const u=await me(); fillAcct();
+  if(u&&!u.banned)$("compose").hidden=false; else if(!u)$("loginHint").hidden=false;
+  async function load(){
+    const {data,error}=await s.from("posts").select("*, profiles(username,avatar)").order("created_at",{ascending:false}).limit(50);
+    const f=$("feed"); f.textContent="";
+    if(error||!data.length){f.textContent=error?"Load nahi hua.":"Abhi koi post nahi. Pehla tu daal!";return}
+    data.forEach(x=>{
+      const c=document.createElement("article");c.className="post";
+      const m=document.createElement("div");m.className="meta";
+      if(x.profiles&&x.profiles.avatar){const i=document.createElement("img");i.src=x.profiles.avatar;i.alt="";m.appendChild(i)}
+      const n=document.createElement("span");n.textContent=((x.profiles&&x.profiles.username)||"user")+" · "+new Date(x.created_at).toLocaleDateString();m.appendChild(n);
+      if(x.hidden){const h=document.createElement("span");h.textContent=" (hidden)";m.appendChild(h)}
+      if(u&&(u.id===x.user_id||u.role==="admin")){const d=document.createElement("button");d.className="del";d.textContent="Delete";
+        d.onclick=async()=>{if(confirm("Delete this post?")){await s.from("posts").delete().eq("id",x.id);load()}};m.appendChild(d)}
+      const h3=document.createElement("h3");h3.textContent=x.title;
+      const p=document.createElement("p");p.textContent=x.body;
+      c.append(m,h3,p);f.appendChild(c);
+    });
+  }
+  $("go").onclick=async()=>{
+    const t=$("ti").value.trim(),b=$("bo").value.trim();
+    if(!t||!b){$("msg").textContent="Title aur text dono bhar.";return}
+    $("go").disabled=true;
+    const {error}=await s.from("posts").insert({title:t,body:b});
+    $("go").disabled=false;
+    if(error){$("msg").textContent="Post nahi hua: "+error.message;return}
+    $("msg").textContent="";$("ti").value="";$("bo").value="";load();
+  };
+  load();
+})();
+</script></body></html>
