@@ -38,8 +38,7 @@ const SITE = {
 
      // --- Extra nav links (alag page ya bahar ka link) ---
   navLinks: [
-    { text: "Converter", url: "converter/" },
-    { text: "Ghost generator", url: "converter/ghost.html" }
+       { text: "Ghost generator", url: "converter/ghost.html" }
   ],
 
 
@@ -55,8 +54,8 @@ const SITE = {
   // --- Stats (Home page pe numbers) ---
   stats: {
     // Manual numbers: auto-fetch fail ho ya setup na ho to ye dikhenge. Khali "" = chhup jayega.
-    subscribers: "700+",   // abhi ka number, kabhi kabhi khud update kar dena
-    discordMembers: "50+",
+    subscribers: "750+",   // abhi ka number, kabhi kabhi khud update kar dena
+    discordMembers: "60+",
 
     // Subscriber goal: progress bar dikhayega (jaise "Road to 1K"). Nahi chahiye to 0 ya "" kar de.
     goal: 1000,
@@ -125,17 +124,11 @@ team: [
   discordInvite: "https://discord.gg/XcUkm6mMEm",
   communityText: "Chat with other creators, get updates first and hang out on Discord.",
 
-  // --- Ideas tab (Reddit jaisa discussion, GitHub Discussions pe chalta hai) ---
-  ideasIntro: "Got an idea for my next video, addon or project? Post it here and discuss it with others. You need a free GitHub account to post.",
+  // --- Account system (Supabase, free) --- SETUP.md dekh
+  supabaseUrl: "https://iqpbofcqebtzwxvvgfbm.supabase.co",       // jaise https://abcd1234.supabase.co
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxcGJvZmNxZWJ0end4dnZnZmJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMDIyNDUsImV4cCI6MjEwODY3ODI0NX0._gD5KGQp-nuy7stWtz4EO6cA6g3mDK15jFZwnAfKHRs",   // Supabase > Project Settings > API > anon public key
 
-  // Giscus setup: https://giscus.app pe jaa, apna repo daal, jo 4 values mile wo yahan paste kar.
-  // Khali chhodega to Ideas tab me setup ka message dikhega.
-  giscus: {
-    repo: "bladelow/bladelow.github.io",       // example: "sujaydhara654-jpg/sujaydhara654-jpg.github.io"
-    repoId: "R_kgDOVDxKAA",
-    category: "Announcements",   // example: "Ideas"
-    categoryId: "DIC_kwDOVDxKAM4DHf3G"
-  },
-
+  pages: [],
+  posts: [],
   footer: "Made by BladeLow"
 };
