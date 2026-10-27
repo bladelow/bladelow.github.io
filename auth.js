@@ -33,7 +33,7 @@ async function requireAdmin() {
   const p = document.getElementById("panel");
   const u = await me();
   if (!getSb()) { p.textContent = "config.js me supabaseUrl aur supabaseAnonKey daal."; return false; }
-  if (!u) { p.innerHTML = '<p>Admin ke liye pehle login kar.</p><p><a href="login.html">Login with Discord</a></p>'; return false; }
-  if (u.role !== "admin") { p.textContent = "YYour account is not an admin account."; return false; }
+  if (!u) { p.innerHTML = '<p>Log in first to access the admin section.</p><p><a href="login.html">Login with Discord</a></p>'; return false; }
+  if (u.role !== "admin") { p.textContent = "Your account is not an admin account."; return false; }
   return true;
 }
