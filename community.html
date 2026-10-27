@@ -36,7 +36,7 @@ input,textarea{width:100%;padding:.7rem;background:var(--ink2);color:var(--ice);
   async function load(){
     const {data,error}=await s.from("posts").select("*, profiles(username,avatar)").order("created_at",{ascending:false}).limit(50);
     const f=$("feed"); f.textContent="";
-    if(error||!data.length){f.textContent=error?"Not loaded.":"Not post here, become the first";return}
+    if(error||!data.length){f.textContent=error?"Not loaded.":"There are no posts yet, be the first to post!";return}
     data.forEach(x=>{
       const c=document.createElement("article");c.className="post";
       const m=document.createElement("div");m.className="meta";
