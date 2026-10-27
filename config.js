@@ -36,10 +36,14 @@ const SITE = {
     ""
   ],
 
-     // --- Extra nav links (alag page ya bahar ka link) ---
+    //  --- Extra nav links (alag page ya bahar ka link) ---
+   /*
+  
   navLinks: [
        { text: "Ghost generator", url: "converter/ghost.html" }
   ],
+  
+  */
 
 
 
