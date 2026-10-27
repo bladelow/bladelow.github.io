@@ -22,7 +22,7 @@ input,textarea{width:100%;padding:.7rem;background:var(--ink2);color:var(--ice);
   <input id="ti" maxlength="120" placeholder="Title"><textarea id="bo" rows="4" maxlength="3000" placeholder="Kuch share kar..."></textarea>
   <button class="btn" id="go">Post</button> <span id="msg"></span>
 </div>
-<p id="loginHint" hidden><a href="login.html" style="color:var(--edge);font-weight:700">Discord se login kar</a> post karne ke liye.</p>
+<p id="loginHint" hidden><a href="login.html" style="color:var(--edge);font-weight:700">Login with your Discord account</a> to post in the community feed.</p>
 <div id="feed" style="margin-top:1.5rem"></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -36,7 +36,7 @@ input,textarea{width:100%;padding:.7rem;background:var(--ink2);color:var(--ice);
   async function load(){
     const {data,error}=await s.from("posts").select("*, profiles(username,avatar)").order("created_at",{ascending:false}).limit(50);
     const f=$("feed"); f.textContent="";
-    if(error||!data.length){f.textContent=error?"Load nahi hua.":"Abhi koi post nahi. Pehla tu daal!";return}
+    if(error||!data.length){f.textContent=error?"Not loaded.":"Not post here, become the first";return}
     data.forEach(x=>{
       const c=document.createElement("article");c.className="post";
       const m=document.createElement("div");m.className="meta";
