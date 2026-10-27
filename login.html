@@ -1,1 +1,33 @@
 
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login - BladeLow</title><link rel="icon" href="pfp.jpg">
+<style>
+:root{--ink:#0c130e;--ink2:#15201a;--steel:#9db89a;--ice:#eef5ec;--edge:#57d13d;--line:#243428}
+*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--ice);font:17px/1.6 "Segoe UI",system-ui,sans-serif;min-height:100vh;display:grid;place-items:center;padding:1rem}
+.card{background:var(--ink2);border:1px solid var(--line);border-radius:12px;padding:2rem;width:100%;max-width:420px;text-align:center}
+img{width:72px;height:72px;border-radius:50%;object-fit:cover}h1{margin:.5rem 0 1rem}p{color:var(--steel)}
+.btn{display:block;width:100%;padding:.85rem;margin-top:.7rem;border:2px solid var(--edge);background:var(--edge);color:var(--ink);font:inherit;font-weight:700;border-radius:8px;text-decoration:none;cursor:pointer}
+.btn.ghost{background:none;color:var(--ice)}
+</style></head><body>
+<div class="card"><img id="av" alt="" hidden><h1 id="h">Sign in</h1><p id="t">Discord se login kar, account apne aap ban jayega.</p><div id="b"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script><script src="auth.js"></script>
+<script>
+(async()=>{
+  const b=document.getElementById("b"), add=(t,f,g)=>{const a=document.createElement(f?"button":"a");a.className="btn"+(g?" ghost":"");a.textContent=t;if(f)a.onclick=f;else a.href=g2;return a};
+  function btn(t,fn,ghost){const x=document.createElement("button");x.className="btn"+(ghost?" ghost":"");x.textContent=t;x.onclick=fn;b.appendChild(x)}
+  function lnk(t,h){const x=document.createElement("a");x.className="btn ghost";x.textContent=t;x.href=h;b.appendChild(x)}
+  if(!getSb()){document.getElementById("t").textContent="Setup baaki hai: config.js me supabaseUrl aur supabaseAnonKey daal (SETUP.md dekh).";return}
+  const s=getSb();
+  await s.auth.getSession(); // OAuth redirect se aaya token yahan process hota hai
+  const u=await me();
+  if(!u){btn("Sign in with Discord",loginDiscord);return}
+  document.getElementById("h").textContent=u.username;
+  document.getElementById("t").textContent=u.role==="admin"?"Admin account":"Logged in";
+  if(u.avatar){const i=document.getElementById("av");i.src=u.avatar;i.hidden=false}
+  lnk("Open community feed","community.html");
+  if(u.role==="admin")lnk("Admin panel","admin.html");
+  btn("Log out",logout,true);
+})();
+</script></body></html>
