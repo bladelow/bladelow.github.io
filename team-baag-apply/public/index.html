@@ -1,0 +1,73 @@
+﻿<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>TEAM_BAAG - Join us</title>
+<style>:root{--g:#22c55e;--c:#151918;--t:#e6ece8;--b:#232b27}*{box-sizing:border-box}body{margin:0;background:linear-gradient(#0b0d0c,#101512);color:var(--t);font:16px system-ui,sans-serif}
+main{max-width:700px;margin:auto;padding:24px}h1 span{color:var(--g)}.card{background:var(--c);border:1px solid var(--b);border-radius:12px;padding:20px;margin:16px 0}
+label{display:block;margin:12px 0 4px;font-size:14px}input,select,textarea{width:100%;padding:10px;background:#0f1311;color:var(--t);border:1px solid #2a342f;border-radius:8px}
+button{background:var(--g);color:#04110a;border:0;padding:10px 18px;border-radius:8px;font-weight:600;cursor:pointer;margin:12px 8px 0 0}.chips label{display:inline-block;margin:4px;padding:6px 10px;border:1px solid #2a342f;border-radius:20px;width:auto}.chips input{width:auto}
+.bar{height:6px;background:var(--b);border-radius:3px}.bar i{display:block;height:100%;background:var(--g);border-radius:3px;transition:width .3s}.err{color:#f87171;white-space:pre-wrap}.ok{color:#86efac}
+.status{font-size:1.1em;margin:8px 0}code{background:#0f1311;padding:2px 6px;border-radius:4px}
+</style>
+<main><h1>TEAM<span>_</span>BAAG <small>Recruitment</small></h1><div id=app class=card>Loading...</div></main>
+<script>
+// Server-side backend handles Discord OAuth and submission; no recruitment API keys in browser.
+const API='/api/v1',$=id=>document.getElementById(id),P=new URLSearchParams(location.search),guild=P.get('guild');
+const SK={Development:['JavaScript','HTML/CSS','Python','Java','C/C++','Minecraft Addon Development'],Minecraft:['Building','Command Systems','Resource Packs','Behavior Packs','Addon Development','Redstone'],Creative:['Video Editing','Anime Editing','3D Animation','Graphic Design','Thumbnail Design','Motion Graphics'],Community:['Discord Management','Community Management','Content Creation','Social Media Management']};
+let me,step=0,d={profile:{},skills:[],experience:{},portfolio:{links:[],files:[]}};const STEPS=['Basics','Skills','Experience','Portfolio','Review'];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const STATUS={submitted:'Submitted',pending_analysis:'Analysis pending',review_pending:'In human review',more_information_requested:'More information requested',approved:'Approved',rejected:'Rejected'};
+function label(s){return STATUS[s]||String(s||'unknown').replace(/_/g,' ')}
+async function init(){
+ if(!guild){return $('app').innerHTML='<p>This application link is server-specific. Please use the link from the TEAM_BAAG Discord server (/?guild=SERVER_ID).</p>'}
+ const r=await fetch(API+'/me');
+ if(!r.ok)return $('app').innerHTML=`<p>Sign in with Discord to apply.</p><button onclick="location='${API}/auth/discord?guild='+encodeURIComponent(guild)">Login with Discord</button>`;
+ me=await r.json();
+ if(me.guild!==guild) return $('app').innerHTML=`<p class=err>Session is for a different server.</p><button onclick="fetch('${API}/auth/logout',{method:'POST'}).then(()=>location.reload())">Switch account/server</button>`;
+ if(!me.member)return $('app').innerHTML='<p class=err>You must be a member of the Discord server you are applying to.</p>';
+ await checkExisting();
+}
+async function checkExisting(){
+ try{
+  const r=await fetch(API+'/my/status?guild_id='+encodeURIComponent(guild));
+  if(r.ok){const j=await r.json(); if(j&&j.status && ['submitted','pending_analysis','review_pending','more_information_requested','approved'].includes(j.status)) return showStatus(j)}
+ }catch{}
+ draw();
+}
+function showStatus(j){
+ $('app').innerHTML=`<h2>Application status</h2><p class=status>Status: <b>${esc(label(j.status))}</b></p><p>Application ID: <code>${esc(j.applicationId||j.id||'')}</code></p><p>Updated: ${esc(j.updatedAt||j.submittedAt||'')}</p><p class=ok>The bot and website stay synchronized through the shared backend. AI never makes the final decision.</p><button onclick="location.reload()">Refresh</button>`;
+}
+function draw(){const s=STEPS[step];let h=`<div class=bar><i style="width:${(step+1)*20}%"></i></div><h2>${s}</h2><p>Signed in as <b>${esc(me.name)}</b></p>`;
+ if(s=='Basics')h+=`<label>Age group<select id=age>${['','under-13','13-15','16-17','18-20','21+'].map(a=>`<option ${d.profile.age_group==a?'selected':''}>${a}</option>`).join('')}</select></label><label>Country (optional)<input id=cty value="${esc(d.profile.country)}"></label><label>Display name (optional)<input id=dn value="${esc(d.profile.display_name)}"></label>`;
+ if(s=='Skills')h+=Object.entries(SK).map(([k,v])=>`<b>${k}</b><div class=chips>${v.map(x=>`<label><input type=checkbox value="${x}" ${d.skills.includes(x)?'checked':''}> ${x}</label>`).join('')}</div>`).join('')+`<label>Other<input id=oth value="${esc(d.other)}"></label>`;
+ if(s=='Experience'){const E=d.experience;h+=`<label>Level<select id=lv>${['Beginner','Intermediate','Advanced'].map(a=>`<option ${E.level==a?'selected':''}>${a}</option>`).join('')}</select></label>`+[['duration','How long have you practised?'],['team_experience','Worked in a team before?'],['tools','Tools (comma separated)'],['previous_projects','Previous projects'],['motivation','Why join TEAM_BAAG? *'],['contribution','What can you contribute? *']].map(([k,l])=>`<label>${l}<textarea rows=2 id=x_${k}>${esc(Array.isArray(E[k])?E[k].join(', '):E[k])}</textarea></label>`).join('')}
+ if(s=='Portfolio')h+=`<label>Portfolio links (one per line, optional)<textarea rows=3 id=links>${esc(d.portfolio.links.join('\n'))}</textarea></label><label>Image/video evidence (max 25MB)<input type=file id=f accept="image/jpeg,image/png,image/webp,video/mp4"></label><div id=fl>${d.portfolio.files.map(f=>esc(f.path.split('/').pop())+' ok').join('<br>')}</div><p style="font-size:13px;opacity:.8">Files are stored safely; the bot does not execute uploads.</p>`;
+ if(s=='Review')h+=`<p>Review your application before submitting. A human administrator always makes the final decision.</p><pre style="white-space:pre-wrap;max-height:260px;overflow:auto;background:#0f1311;padding:10px;border-radius:8px">${esc(JSON.stringify({guildId:guild,ageGroup:d.profile.age_group,skills:d.skills,experience:d.experience,portfolioLinks:d.portfolio.links,files:d.portfolio.files.length},null,2))}</pre><label><input type=checkbox id=pv style="width:auto"> I agree my application data is stored for recruitment and kept only as long as needed.</label>`;
+ h+=`<p id=m class=err></p>${step?'<button onclick=nav(-1)>Back</button>':''}<button onclick=nav(1)>${step==4?'Submit':'Next'}</button>`;$('app').innerHTML=h;if(s=='Portfolio')$('f').onchange=upload}
+function save(){const s=STEPS[step],g=i=>$(i)?.value;
+ if(s=='Basics')d.profile={age_group:g('age'),country:g('cty')||null,display_name:g('dn')||null};
+ if(s=='Skills'){d.other=g('oth');d.skills=[...document.querySelectorAll('.chips input:checked')].map(i=>i.value);if(d.other)d.skills.push('Other: '+d.other)}
+ if(s=='Experience'){const x=k=>g('x_'+k);d.experience={level:g('lv'),duration:x('duration'),team_experience:x('team_experience'),tools:x('tools').split(',').map(t=>t.trim()).filter(Boolean),previous_projects:x('previous_projects'),motivation:x('motivation'),contribution:x('contribution')}}
+ if(s=='Portfolio')d.portfolio.links=g('links').split('\n').map(l=>l.trim()).filter(Boolean)}
+async function nav(n){save();const m=$('m'),s=STEPS[step];
+ if(n>0){if(s=='Basics'&&!d.profile.age_group)return m.textContent='Select an age group';if(s=='Skills'&&!d.skills.length)return m.textContent='Select at least one skill';
+  if(s=='Experience'&&(!d.experience.motivation||!d.experience.contribution))return m.textContent='Motivation and contribution are required';
+  if(s=='Portfolio'&&d.portfolio.links.some(l=>!/^https?:\/\//.test(l)))return m.textContent='Links must start with http(s)://';
+  if(s=='Review')return submit()}
+ step+=n;draw()}
+function upload(){const f=this.files[0];if(!f)return;const x=new XMLHttpRequest(),fd=new FormData;fd.append('file',f);x.open('POST',API+'/uploads');
+ x.upload.onprogress=e=>$('fl').textContent='Uploading '+Math.round(e.loaded/e.total*100)+'%';
+ x.onload=()=>{if(x.status==200){d.portfolio.files.push(JSON.parse(x.responseText));draw()}else $('fl').textContent='Upload failed (type/size not allowed)'};x.send(fd)}
+async function submit(){
+ if(!$('pv').checked)return $('m').textContent='Please accept the privacy notice';
+ $('m').textContent='Submitting...';
+ // RECRUITMENT.md submission shape (server-side backend stores/validates; browser has no API key)
+ const body={guildId:guild,discordUserId:me.id,discordUsername:me.name,ageGroup:d.profile.age_group,skills:d.skills,experience:d.experience,motivation:d.experience.motivation,contribution:d.experience.contribution,portfolioLinks:d.portfolio.links,portfolioEvidence:d.portfolio.files.map(f=>'uploaded:'+f.path),answers:d.experience,submittedAt:new Date().toISOString()};
+ const r=await fetch(API+'/applications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok){
+  if(r.status===409||j.error==='duplicate_pending_application') return checkExisting();
+  return $('m').textContent='Error: '+(j.error||r.status);
+ }
+ const id=(j.application&&j.application.id)||j.id||j.applicationId;
+ $('app').innerHTML=`<h2>Submitted</h2><p>Application ID: <code>${esc(id)}</code></p><p>Status: <b>Analysis pending</b>. The bot will analyze it and a human reviewer will make the final decision.</p><button onclick="location.href='/?guild='+encodeURIComponent(guild)">Check status</button>`;
+}
+init();
+</script>
