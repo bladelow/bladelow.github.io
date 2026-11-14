@@ -74,7 +74,8 @@ const SITE = {
   },
 
    discordServerId: "1460962421073117246",
-redditUrl: "https://www.reddit.com/r/BladeLow",
+  discordBotToken: "MTU2NDYzNzgxMTY2NjE5MDQ0Ng.GAdMPr.BXLHkzsCvEAEOa-W0fvj7IxaedQc91A4mDPiEg",   // Discord bot token (optional) — team member avatars auto-fetch karne ke liye
+  redditUrl: "https://www.reddit.com/r/BladeLow",
 team: [
   { name: "BladeLow", role: "Owner" }
 ],

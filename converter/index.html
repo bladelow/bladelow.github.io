@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Structure Converter</title>
 <link rel="icon" href="../pfp.jpg">
+<link rel="stylesheet" href="../styles.css">
 <style>
   :root { --ink:#0c130e; --ink2:#15201a; --steel:#9db89a; --ice:#eef5ec; --edge:#57d13d; --line:#243428; }
   * { box-sizing: border-box; }
@@ -45,12 +46,17 @@
 
 <nav class="nav" aria-label="Main">
   <a class="brand" href="../#home"><img id="brandImg" alt=""><span id="brand">BladeLow</span></a>
-  <div class="tabs">
+  <div class="nav-right">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="tabs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg><span>Menu</span>
+    </button>
+    <div class="tabs" id="tabs">
     <a href="../#home">Home</a>
     <a href="../#projects">Projects</a>
     <a href="../#community">Community</a>
     <a href="../#ideas">Ideas</a>
     <a href="./" aria-current="page">Converter</a>
+    </div>
   </div>
 </nav>
 
@@ -180,6 +186,11 @@
   drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
   drop.ondragleave = () => drop.classList.remove("over");
   drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); handle(e.dataTransfer.files); };
+<script>
+const mt=document.getElementById('menuToggle'),tb=document.getElementById('tabs');
+mt.addEventListener('click',()=>{const o=tb.classList.toggle('menu-open');mt.setAttribute('aria-expanded',String(o));});
+tb.addEventListener('click',e=>{if(e.target.closest('a')){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});
+window.addEventListener('resize',()=>{if(window.innerWidth>700){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});
 </script>
 </body>
 </html>

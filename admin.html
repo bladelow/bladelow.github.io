@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>BladeLow admin</title>
 <link rel="icon" href="pfp.jpg">
+<link rel="stylesheet" href="styles.css">
 <style>
   :root { --ink:#0c130e; --ink2:#15201a; --steel:#9db89a; --ice:#eef5ec; --edge:#57d13d; --line:#243428; --bad:#ff6b5e; }
   * { box-sizing: border-box; }
@@ -68,6 +69,22 @@
 </head>
 <body>
 
+<nav class="nav" aria-label="Main">
+  <a class="brand" href="index.html"><img id="brandImg" alt=""><span id="brand">BladeLow</span></a>
+  <div class="nav-right">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="tabs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg><span>Menu</span>
+    </button>
+    <div class="tabs" id="tabs">
+      <a href="index.html#home">Home</a>
+      <a href="index.html#projects">Projects</a>
+      <a href="index.html#community">Community</a>
+      <a href="posts.html">Updates</a>
+    </div>
+    <a href="login.html" id="acct" class="login-btn">Login</a>
+  </div>
+</nav>
+
 <div class="top">
   <b>BladeLow admin</b>
   <span id="status">No changes yet</span>
@@ -98,6 +115,10 @@
   if (T0.bg) root.setProperty("--ink", T0.bg);
   if (T0.panel) root.setProperty("--ink2", T0.panel);
   if (T0.text) root.setProperty("--ice", T0.text);
+
+  document.getElementById("brand").textContent = SITE.name || "BladeLow";
+  fillAcct();
+  (function(){const mt=document.getElementById('menuToggle'),tb=document.getElementById('tabs');if(!mt||!tb)return;mt.addEventListener('click',()=>{const o=tb.classList.toggle('menu-open');mt.setAttribute('aria-expanded',String(o));});tb.addEventListener('click',e=>{if(e.target.closest('a')){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});window.addEventListener('resize',()=>{if(window.innerWidth>700){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});})();
 
   // ---------- State: ek copy jise hum edit karte hai ----------
   const state = JSON.parse(JSON.stringify(SITE));
@@ -336,8 +357,10 @@
       const box = el("div"); p.appendChild(box);
       listEditor(box, state.team, [
         { label: "Name", key: "name" },
-        { label: "Role", key: "role", type: "select", options: ["Owner", "Admin", "Mod"] }
-      ], { name: "New member", role: "Mod" }, it => (it.name || "Member") + " (" + (it.role || "") + ")");
+        { label: "Role", key: "role", type: "select", options: ["Owner", "Admin", "Mod"] },
+        { label: "Discord ID", key: "discordId", hint: "Discord user ID (right-click user in Discord > Copy User ID). Avatar Discord se aapke aayega." },
+        { label: "Avatar image URL", key: "avatar", hint: "Agar Discord ID nahi hai to direct image URL daal." }
+      ], { name: "New member", role: "Mod", discordId: "", avatar: "" }, it => (it.name || "Member") + " (" + (it.role || "") + ")");
     },
     "Moderation": async p => {
       head(p, "Community posts", "User posts: Hide, delete, or ban the user.");

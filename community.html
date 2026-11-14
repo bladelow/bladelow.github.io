@@ -1,30 +1,55 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Community feed - BladeLow</title><link rel="icon" href="pfp.jpg">
+<link rel="stylesheet" href="styles.css">
 <style>
-:root{--ink:#0c130e;--ink2:#15201a;--steel:#9db89a;--ice:#eef5ec;--edge:#57d13d;--line:#243428;--bad:#ff6b5e}
-*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--ice);font:17px/1.6 "Segoe UI",system-ui,sans-serif}
-header{display:flex;justify-content:space-between;gap:.5rem;padding:.8rem 5vw;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--ink)}
-header a{color:var(--ice);font-weight:700;text-decoration:none;padding:.4rem 0}
-main{max-width:720px;margin:0 auto;padding:1.2rem 5vw 4rem}
-input,textarea{width:100%;padding:.7rem;background:var(--ink2);color:var(--ice);border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:.6rem}
-.btn{padding:.7rem 1.3rem;background:var(--edge);color:var(--ink);border:0;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}
-.post{background:var(--ink2);border:1px solid var(--line);border-left:3px solid var(--edge);border-radius:8px;padding:1rem;margin-bottom:1rem}
-.post h3{margin:.2rem 0}.post p{margin:.4rem 0;white-space:pre-wrap;overflow-wrap:anywhere}
-.meta{display:flex;align-items:center;gap:.5rem;color:var(--steel);font-size:.85rem}.meta img{width:24px;height:24px;border-radius:50%}
-.del{background:none;border:1px solid var(--line);color:var(--steel);border-radius:6px;padding:.25rem .6rem;cursor:pointer;margin-left:auto}
-#msg{color:var(--bad)}
-</style></head><body>
-<header><a href="index.html">← BladeLow</a><a id="acct" href="login.html">Login</a></header>
-<main>
-<h1>Community feed</h1>
-<div id="compose" hidden>
-  <input id="ti" maxlength="120" placeholder="Title"><textarea id="bo" rows="4" maxlength="3000" placeholder="Share something..."></textarea>
-  <button class="btn" id="go">Post</button> <span id="msg"></span>
+  .feed-single header { padding: 0.8rem 5vw; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--ink); z-index: 40; display:flex; justify-content:space-between; gap:.5rem; align-items:center; }
+  .feed-single header a { color: var(--ice); font-weight: 700; text-decoration: none; padding: .4rem 0; }
+  .feed-single header a:hover { color: var(--edge); }
+  .feed-single main { max-width: 720px; margin: 0 auto; padding: 1.2rem 5vw 4rem; }
+  .feed-single input, .feed-single textarea { width: 100%; padding: .7rem; background: var(--ink2); color: var(--ice); border: 1px solid var(--line); border-radius: 8px; font: inherit; margin-bottom: .6rem; }
+  .feed-single .btn { padding: .7rem 1.3rem; background: var(--edge); color: var(--ink); border: 0; border-radius: 8px; font: inherit; font-weight: 700; cursor: pointer; }
+  .feed-single .post { background: var(--ink2); border: 1px solid var(--line); border-left: 3px solid var(--edge); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+  .feed-single .post h3 { margin: .2rem 0; }
+  .feed-single .post p { margin: .4rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .feed-single .meta { display: flex; align-items: center; gap: .5rem; color: var(--steel); font-size: .85rem; }
+  .feed-single .meta img { width: 24px; height: 24px; border-radius: 50% }
+  .feed-single .del { background: none; border: 1px solid var(--line); color: var(--steel); border-radius: 6px; padding: .25rem .6rem; cursor: pointer; margin-left: auto; }
+  .feed-single .del:hover { border-color: var(--steel); color: var(--ice); }
+  .feed-single #msg { color: var(--bad); }
+</style>
+</head><body>
+<nav class="nav" aria-label="Main">
+  <a class="brand" href="index.html"><img id="brandImg" alt=""><span id="brand">BladeLow</span></a>
+  <div class="nav-right">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="tabs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg><span>Menu</span>
+    </button>
+    <div class="tabs" id="tabs">
+      <a href="index.html#home">Home</a>
+      <a href="index.html#projects">Projects</a>
+      <a href="index.html#community">Community</a>
+      <a href="community.html" aria-current="page">Feed</a>
+      <a href="posts.html">Updates</a>
+    </div>
+    <a href="login.html" id="acct" class="login-btn">Login</a>
+  </div>
+</nav>
+
+<div class="feed-single">
+  <header><a href="index.html">← BladeLow</a><a id="acct" href="login.html">Login</a></header>
+  <main>
+    <h1>Community feed</h1>
+    <div id="compose" hidden>
+      <input id="ti" maxlength="120" placeholder="Title"><textarea id="bo" rows="4" maxlength="3000" placeholder="Share something..."></textarea>
+      <button class="btn" id="go">Post</button> <span id="msg"></span>
+    </div>
+    <p id="loginHint" hidden><a href="login.html" style="color:var(--edge);font-weight:700">Login with your Discord account</a> to post in the community feed.</p>
+    <div id="feed" style="margin-top:1.5rem"></div>
+  </main>
+  <footer id="footer"></footer>
 </div>
-<p id="loginHint" hidden><a href="login.html" style="color:var(--edge);font-weight:700">Login with your Discord account</a> to post in the community feed.</p>
-<div id="feed" style="margin-top:1.5rem"></div>
-</main>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script><script src="auth.js"></script>
 <script>
@@ -61,4 +86,10 @@ input,textarea{width:100%;padding:.7rem;background:var(--ink2);color:var(--ice);
   };
   load();
 })();
-</script></body></html>
+<script>
+const mt=document.getElementById('menuToggle'),tb=document.getElementById('tabs');
+mt.addEventListener('click',()=>{const o=tb.classList.toggle('menu-open');mt.setAttribute('aria-expanded',String(o));});
+tb.addEventListener('click',e=>{if(e.target.closest('a')){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});
+window.addEventListener('resize',()=>{if(window.innerWidth>700){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});
+</script>
+</body></html>
