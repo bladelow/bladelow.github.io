@@ -30,6 +30,12 @@ const SITE = {
     { text: "Watch on YouTube", url: "https://www.youtube.com/@BladeLow", icon: "youtube" }
   ],
 
+  // --- Embeds (YouTube, Spotify links dikhenge home page pe) ---
+  embeds: [
+    { title: "Latest Video", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", note: "Check out my latest video" },
+    { title: "Spotify Track", url: "https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh", note: "Listen on Spotify" }
+  ],
+
   // --- About section (har item = ek paragraph) ---
   about: [
     "Hey, I'm Sujay, also known as BladeLow! I'm a student, content creator, and tech enthusiast who loves Minecraft, coding, game development, and video editing. I enjoy experimenting with new ideas and turning my creativity into something unique.",

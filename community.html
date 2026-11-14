@@ -30,7 +30,6 @@
       <a href="index.html#projects">Projects</a>
       <a href="index.html#community">Community</a>
       <a href="community.html" aria-current="page">Feed</a>
-      <a href="posts.html">Updates</a>
     </div>
     <a href="login.html" id="acct" class="login-btn">Login</a>
   </div>
@@ -85,11 +84,7 @@
     $("msg").textContent="";$("ti").value="";$("bo").value="";load();
   };
   load();
+  (function(){const mt=document.getElementById('menuToggle'),tb=document.getElementById('tabs');if(!mt||!tb)return;mt.addEventListener('click',()=>{const o=tb.classList.toggle('menu-open');mt.setAttribute('aria-expanded',String(o));});tb.addEventListener('click',e=>{if(e.target.closest('a')){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});window.addEventListener('resize',()=>{if(window.innerWidth>700){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});})();
 })();
-<script>
-const mt=document.getElementById('menuToggle'),tb=document.getElementById('tabs');
-mt.addEventListener('click',()=>{const o=tb.classList.toggle('menu-open');mt.setAttribute('aria-expanded',String(o));});
-tb.addEventListener('click',e=>{if(e.target.closest('a')){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});
-window.addEventListener('resize',()=>{if(window.innerWidth>700){tb.classList.remove('menu-open');mt.setAttribute('aria-expanded','false');}});
 </script>
 </body></html>

@@ -164,6 +164,8 @@
 
     <section id="videoSec"><h2 id="videoTitle">Latest video</h2><div class="video" id="video"></div></section>
 
+    <section id="embedSec"><h2>Embeds</h2><div class="embeds" id="embeds"></div></section>
+
   </div>
 
 </div>
@@ -267,11 +269,6 @@
     if (/^https?:/.test(l.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
     $("tabs").appendChild(a);
   });
-
-  if ((SITE.posts || []).length) {
-    const a = el("a", { href: "posts.html" }, "Updates");
-    $("tabs").appendChild(a);
-  }
 
   (SITE.pages || []).forEach(page => {
     const a = el("a", { href: "page.html?slug=" + encodeURIComponent(page.slug || "") }, page.title || "Page");
@@ -392,6 +389,30 @@
     }));
   } else {
     $("videoSec").remove();
+  }
+
+  // ---------- Embeds ----------
+  function embedHtml(url) {
+    const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if (yt) return '<iframe src="https://www.youtube.com/embed/' + yt[1] + '" allowfullscreen></iframe>';
+    const sp = url.match(/open\.spotify\.com\/(?:track|album|playlist)\/([A-Za-z0-9]+)/);
+    if (sp) return '<iframe src="https://open.spotify.com/embed/' + sp[0].split('/').pop() + '" width="100%" height="232" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>';
+    return '';
+  }
+  if ((SITE.embeds || []).length) {
+    SITE.embeds.forEach(e => {
+      const card = el("div", { class: "embed-card" });
+      const html = embedHtml(e.url);
+      if (!html) return;
+      card.innerHTML = html;
+      const info = el("div", { class: "embed-info" });
+      info.appendChild(el("h3", {}, e.title || "Embed"));
+      info.appendChild(el("p", {}, e.note || ""));
+      card.appendChild(info);
+      $("embeds").appendChild(card);
+    });
+  } else {
+    $("embedSec").remove();
   }
 
   // ---------- Projects ----------
