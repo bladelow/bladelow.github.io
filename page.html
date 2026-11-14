@@ -36,7 +36,7 @@
   <footer id="footer"></footer>
 </div>
 
-<script src="config.js"></script><script src="auth.js"></script>
+<script src="secrets.js"></script><script src="config.js"></script><script src="auth.js"></script>
 <script>
 const S=typeof SITE!=='undefined'?SITE:{},q=new URLSearchParams(location.search),slug=q.get('slug')||'',p=(S.pages||[]).find(x=>x.slug===slug);const root=document.documentElement.style,T=S.theme||{};if(T.accent)root.setProperty('--edge',T.accent);if(T.muted)root.setProperty('--steel',T.muted);if(T.bg)root.setProperty('--ink',T.bg);if(T.panel)root.setProperty('--ink2',T.panel);if(T.text)root.setProperty('--ice',T.text);document.getElementById('brand').textContent=S.name||'BladeLow';document.getElementById('footer').textContent=S.footer||'';document.title=(p&&p.title?p.title+' | ':'')+(S.name||'BladeLow');if(p){document.getElementById('title').textContent=p.title||'Untitled page';document.getElementById('desc').textContent=p.description||'';document.getElementById('content').textContent=p.content||'';}else{document.getElementById('title').textContent='Page not found';document.getElementById('missing').hidden=false;document.getElementById('eyebrow').hidden=true;}
 fillAcct();

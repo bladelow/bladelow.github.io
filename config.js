@@ -66,7 +66,7 @@ const SITE = {
 
     // YouTube auto subscribers (optional): Google Cloud Console me free "YouTube Data API v3" key bana.
     // Key ko "HTTP referrers" se restrict kar de: https://tumharausername.github.io/*
-    youtubeApiKey: "",
+    youtubeApiKey: (typeof window !== "undefined" && window.SITE_SECRETS && window.SITE_SECRETS.youtubeApiKey) || "",
 
     // Discord auto members (optional): invite link ka last part. Example: discord.gg/abc123 -> "abc123"
     // Invite "Never expire" wala hona chahiye.
@@ -74,7 +74,7 @@ const SITE = {
   },
 
    discordServerId: "1460962421073117246",
-  discordBotToken: "",   // Discord bot token (optional) — apna token yahan daal, config.js commit mat karna
+  discordBotToken: (typeof window !== "undefined" && window.SITE_SECRETS && window.SITE_SECRETS.discordBotToken) || "",
   redditUrl: "https://www.reddit.com/r/BladeLow",
 team: [
   { name: "BladeLow", role: "Owner" }
@@ -130,8 +130,8 @@ team: [
   communityText: "Chat with other creators, get updates first and hang out on Discord.",
 
   // --- Account system (Supabase, free) --- SETUP.md dekh
-  supabaseUrl: "https://iqpbofcqebtzwxvvgfbm.supabase.co",       // jaise https://abcd1234.supabase.co
-  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxcGJvZmNxZWJ0end4dnZnZmJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMDIyNDUsImV4cCI6MjEwODY3ODI0NX0._gD5KGQp-nuy7stWtz4EO6cA6g3mDK15jFZwnAfKHRs",   // Supabase > Project Settings > API > anon public key
+  supabaseUrl: (typeof window !== "undefined" && window.SITE_SECRETS && window.SITE_SECRETS.supabaseUrl) || "",
+  supabaseAnonKey: (typeof window !== "undefined" && window.SITE_SECRETS && window.SITE_SECRETS.supabaseAnonKey) || "",
 
   pages: [],
   posts: [],

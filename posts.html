@@ -39,7 +39,7 @@
   <footer id="footer"></footer>
 </div>
 
-<script src="config.js"></script><script src="auth.js"></script>
+<script src="secrets.js"></script><script src="config.js"></script><script src="auth.js"></script>
 <script>
 const S=typeof SITE!=='undefined'?SITE:{},root=document.documentElement.style,T=S.theme||{};if(T.accent)root.setProperty('--edge',T.accent);if(T.muted)root.setProperty('--steel',T.muted);if(T.bg)root.setProperty('--ink',T.bg);if(T.panel)root.setProperty('--ink2',T.panel);if(T.text)root.setProperty('--ice',T.text);document.getElementById('brand').textContent=S.name||'BladeLow';document.getElementById('footer').textContent=S.footer||'';document.title='Updates | '+(S.name||'BladeLow');const host=document.getElementById('posts');const posts=[...(S.posts||[])].reverse();if(!posts.length){const p=document.createElement('p');p.className='empty';p.textContent='No updates published yet. Check back soon!';host.append(p)}posts.forEach(post=>{const c=document.createElement('article');c.className='card';const date=document.createElement('div');date.className='date';date.textContent=post.date||'';const h=document.createElement('h2');h.textContent=post.title||'Untitled post';const s=document.createElement('p');s.className='summary';s.textContent=post.summary||'';c.append(date,h,s);if(post.url){const a=document.createElement('a');a.href=post.url;a.textContent='Open project ↗';a.target='_blank';a.rel='noopener noreferrer';c.append(a)}host.append(c)});
 fillAcct();
