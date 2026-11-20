@@ -8,11 +8,12 @@ Browser version of the LyricGlyph Generator (phone + PC). No install, no server 
   Opening index.html by double-click does NOT work (browsers block module workers on file://).
 
 ## Flow
-1. Import the original song (OGG/MP3/WAV/FLAC/M4A). Optionally run **Separate vocals for AI**; separation runs locally in the browser and caches its model. The separation library uses the page audio context (not a Web Worker), because OfflineAudioContext is not exposed in standard dedicated workers.
-2. Edit the song title and search Google directly or open the mini browser. Copy the lyrics and paste them into the lyrics field.
-3. Transcribe the separated vocal stem with Whisper (transformers.js). If separation was skipped or failed, Whisper falls back to the original song.
-4. Apply lyrics to the recognized words, then adjust each word by dragging its clip on the timeline or editing its timestamp.
-5. Download the `.js` file or import your `.mcaddon`; the song is installed into a free slot and the updated addon is exported.
+1. Import the original song (OGG/MP3/WAV/FLAC/M4A). Either run **Separate vocals for AI**, or expand **Add manually** and import a vocal file plus its matching instrumental file from any external vocal remover.
+2. In manual mode, LyricGlyph uses the vocal file for Whisper and prepares a local mix of vocals + instrumental for the final audio export. Both stems must have matching start points and nearly matching durations.
+3. Edit the song title and search Google directly or open the mini browser. Copy the lyrics and paste them into the lyrics field.
+4. Transcribe the vocal stem with Whisper (transformers.js). If separation was skipped or failed, Whisper falls back to the original song.
+5. Apply lyrics to the recognized words, then adjust each word by dragging its clip on the timeline or editing its timestamp.
+6. Download the `.js` file or import your `.mcaddon`; in manual-stem mode, the combined vocal + instrumental OGG is installed with the lyrics in the selected slot.
 
 ## Needs internet (first time)
 speech engine + model (jsDelivr / Hugging Face, then cached), Google search, OGG encoder (only when the
@@ -23,7 +24,7 @@ song is not already Vorbis .ogg). JSZip is bundled.
 
 
 ## Audio preparation
-Vocal separation is available inside the web app and runs locally; your audio is not uploaded to a remote separation service. The separation library performs its audio processing through its own Float32Array/STFT pipeline and ONNX Runtime. ONNX Runtime's WASM model inference is configured to use proxy-worker mode, which moves model execution off the UI thread. The library does not currently expose detailed per-cent progress, so the UI shows elapsed time only. The first run downloads and caches the ~67 MB Kim Vocal 2 model. CPU-only separation can still take several minutes, especially on older processors. The original imported song remains the playback and MCAddon export source; only the separated vocal stem is sent to Whisper for transcription.
+Vocal separation is available inside the web app and runs locally; your audio is not uploaded to a remote separation service. The separation library performs its audio processing through its own Float32Array/STFT pipeline and ONNX Runtime. ONNX Runtime's WASM model inference is configured to use proxy-worker mode, which moves model execution off the UI thread. The library does not currently expose detailed per-cent progress, so the UI shows elapsed time only. The first run downloads and caches the ~67 MB Kim Vocal 2 model. CPU-only separation can still take several minutes, especially on older processors. When no manual stems are imported, the original song remains the playback and MCAddon export source; only the separated vocal stem is sent to Whisper. In manual-stem mode, the vocal stem is sent to Whisper and the final OGG is rendered by mixing the imported vocal + instrumental stems locally. The mix uses headroom to reduce clipping and is exported automatically with the lyrics.
 
 ## Lyrics lookup
 Enter or edit the song title, then search Google directly or open the in-app mini search panel. Copy lyrics from the search page and use **Paste copied lyrics**, or paste them manually into the lyrics field. Some browsers prevent Google from loading inside an embedded frame; use **Open Google in new tab** in that case.

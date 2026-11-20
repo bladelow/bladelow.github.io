@@ -48,10 +48,18 @@
       <div class="bar" id="barSep" hidden><i></i></div>
       <p class="status" id="sepStatus" role="status"></p>
       <div class="stem-previews" aria-live="polite">
-        <label class="field">Separated vocals <audio id="vocalPreview" controls preload="none" hidden></audio></label>
+        <label class="field">Separated / imported vocals <audio id="vocalPreview" controls preload="none" hidden></audio></label>
         <label class="field">Instrumental <audio id="instrumentalPreview" controls preload="none" hidden></audio></label>
       </div>
-      <p class="fine">First use downloads the vocal-separation model (~67 MB), then your browser may cache it. Separation runs locally with ONNX Runtime WASM; model inference is proxied to a worker. CPU-only processing can take several minutes. The separator currently does not report percentage progress, so the timer is elapsed time, not a progress estimate.</p>
+      <details class="manual-stems" id="manualStemPanel">
+        <summary>＋ Add manually (I already separated the stems)</summary>
+        <p class="fine">Import the two files from any vocal remover. Keep both stems starting at the same point and with matching duration. Whisper will use the vocal file; the final MCAddon audio will be made by mixing vocals + instrumental.</p>
+        <label class="field">Vocal stem <input type="file" id="manualVocalFile" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a"></label>
+        <label class="field">Instrumental stem <input type="file" id="manualInstrumentalFile" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a"></label>
+        <p class="status" id="manualStemStatus" role="status"></p>
+        <button type="button" class="ghost" id="clearManualStems" disabled>Clear manual stems</button>
+      </details>
+      <p class="fine">Automatic separation downloads the model (~67 MB) on first use. Manual mode skips that model entirely. All audio processing stays in your browser.</p>
     </div>
 
     <div class="card" id="card-lyr">

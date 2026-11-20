@@ -15,6 +15,8 @@ const S = {
   events: [], sel: new Set(), nextId: 1, ver: 0, sortedCache: null,
   raw: null,
   mode: "orig", addon: null, busy: false, asrJob: null, nameTouched: false, region: null,
+  manualVocalBuffer: null, manualInstrumentalBuffer: null, manualMixBuffer: null,
+  manualVocalUrl: null, manualInstrumentalUrl: null,
 };
 window.__lf = { S }; // handy for debugging in the browser console
 
@@ -226,19 +228,103 @@ async function loadFile(file) {
 }
 function resetSong() {
   audio.pause();
-  for (const u of [S.fallbackWav]) if (u) URL.revokeObjectURL(u);
+  for (const u of [S.fallbackWav, S.manualVocalUrl, S.manualInstrumentalUrl]) if (u) URL.revokeObjectURL(u);
   if (S.origUrl) URL.revokeObjectURL(S.origUrl);
   if (S.vocalUrl) URL.revokeObjectURL(S.vocalUrl);
   if (S.instrumentalUrl) URL.revokeObjectURL(S.instrumentalUrl);
   for (const url of (S.stemUrls || [])) { try { URL.revokeObjectURL(url); } catch {} }
   for (const id of ["vocalPreview", "instrumentalPreview"]) { const el = $(id); if (el) { el.pause(); el.removeAttribute("src"); el.load(); el.hidden = true; } }
-  Object.assign(S, { orig16: null, vocal16: null, vocal22: null, vocalUrl: null, instrumentalUrl: null, stemUrls: [], fallbackWav: null, origUrl: null, raw: null, mode: "orig", region: null });
+  Object.assign(S, { orig16: null, vocal16: null, vocal22: null, vocalUrl: null, instrumentalUrl: null, stemUrls: [], fallbackWav: null, origUrl: null, raw: null, mode: "orig", region: null, manualVocalBuffer: null, manualInstrumentalBuffer: null, manualMixBuffer: null, manualVocalUrl: null, manualInstrumentalUrl: null });
+  for (const id of ["manualVocalFile", "manualInstrumentalFile"]) $(id).value = "";
+  status("manualStemStatus", "");
+  $("clearManualStems").disabled = true;
   S.events = []; S.sel.clear(); S.ver++;
   chip("chip-lyr", "", "waiting"); chip("chip-asr", "", "waiting");
   for (const id of ["lyrStatus", "asrStatus"]) status(id, "");
   $("lyricsText").value = "";
   renderWords();
 }
+
+// ------------------------------------------------------------------ manual stem import + mix for final addon audio
+async function prepareWhisperFromBuffer(buffer) {
+  const vocalStereo = await resample(buffer, 22050, 2);
+  const left = vocalStereo.getChannelData(0).slice();
+  const right = vocalStereo.numberOfChannels > 1 ? vocalStereo.getChannelData(1).slice() : left;
+  S.vocal22 = mixToMono(left, right);
+  S.vocal16 = null;
+}
+
+async function buildManualStemMix() {
+  const vf = $("manualVocalFile").files[0];
+  const inf = $("manualInstrumentalFile").files[0];
+  if (!vf || !inf) {
+    status("manualStemStatus", "Choose both the vocal and instrumental files.");
+    return;
+  }
+  if (S.busy) return;
+  setBusy(true);
+  status("manualStemStatus", "Decoding both stems locally...");
+  try {
+    const [vocalDecoded, instrumentalDecoded] = await Promise.all([decodeFile(vf), decodeFile(inf)]);
+    const vocal = vocalDecoded.buffer, instrumental = instrumentalDecoded.buffer;
+    const referenceDuration = S.duration || Math.max(vocal.duration, instrumental.duration);
+    if (Math.abs(vocal.duration - instrumental.duration) > 0.75) {
+      throw new Error(`Stem lengths differ by ${Math.abs(vocal.duration - instrumental.duration).toFixed(2)}s. Re-export both stems with matching start/end points.`);
+    }
+    if (S.buffer && (Math.abs(vocal.duration - referenceDuration) > 1.5 || Math.abs(instrumental.duration - referenceDuration) > 1.5)) {
+      throw new Error("These stems do not match the currently imported song duration. Make sure you selected stems from this song.");
+    }
+    const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OfflineCtx) throw new Error("OfflineAudioContext is not supported in this browser. Use the latest Chrome or Edge.");
+    const sampleRate = S.buffer?.sampleRate || Math.max(vocal.sampleRate, instrumental.sampleRate);
+    const duration = S.duration || Math.max(vocal.duration, instrumental.duration);
+    const frames = Math.max(1, Math.ceil(duration * sampleRate));
+    const ctx = new OfflineCtx(2, frames, sampleRate);
+    const vSrc = ctx.createBufferSource(), iSrc = ctx.createBufferSource();
+    const vGain = ctx.createGain(), iGain = ctx.createGain();
+    vSrc.buffer = vocal; iSrc.buffer = instrumental;
+    // Equal-power-safe headroom: each stem starts at -6 dB to reduce clipping.
+    vGain.gain.value = 0.5; iGain.gain.value = 0.5;
+    vSrc.connect(vGain).connect(ctx.destination); iSrc.connect(iGain).connect(ctx.destination);
+    vSrc.start(0); iSrc.start(0);
+    status("manualStemStatus", "Preparing the combined track and vocal transcription audio...");
+    const mixed = await ctx.startRendering();
+    const oldUrls = new Set([S.vocalUrl, S.instrumentalUrl, ...(S.stemUrls || []), S.manualVocalUrl, S.manualInstrumentalUrl].filter(Boolean));
+    for (const url of oldUrls) { try { URL.revokeObjectURL(url); } catch {} }
+    S.stemUrls = [];
+    S.manualVocalBuffer = vocal;
+    S.manualInstrumentalBuffer = instrumental;
+    S.manualMixBuffer = mixed;
+    S.manualVocalUrl = URL.createObjectURL(vf);
+    S.manualInstrumentalUrl = URL.createObjectURL(inf);
+    S.vocalUrl = S.manualVocalUrl;
+    S.instrumentalUrl = S.manualInstrumentalUrl;
+    const vp = $("vocalPreview"), ip = $("instrumentalPreview");
+    vp.src = S.manualVocalUrl; vp.hidden = false;
+    ip.src = S.manualInstrumentalUrl; ip.hidden = false;
+    await prepareWhisperFromBuffer(vocal);
+    chip("chip-asr", "done", "manual vocals ready");
+    $("clearManualStems").disabled = false;
+    if ($("addonAudio")?.options[0]) $("addonAudio").options[0].textContent = "Vocal + instrumental mix (manual stems)";
+    status("manualStemStatus", "Both stems loaded. Whisper will use vocals; MCAddon export will automatically mix vocals + instrumental.", "ok");
+  } catch (err) {
+    S.manualVocalBuffer = S.manualInstrumentalBuffer = S.manualMixBuffer = null;
+    S.vocal22 = S.vocal16 = null;
+    status("manualStemStatus", err?.message || String(err), "err");
+  } finally { setBusy(false); }
+}
+$("manualVocalFile").addEventListener("change", buildManualStemMix);
+$("manualInstrumentalFile").addEventListener("change", buildManualStemMix);
+$("clearManualStems").onclick = () => {
+  for (const u of [S.manualVocalUrl, S.manualInstrumentalUrl]) if (u) URL.revokeObjectURL(u);
+  Object.assign(S, { manualVocalBuffer: null, manualInstrumentalBuffer: null, manualMixBuffer: null, manualVocalUrl: null, manualInstrumentalUrl: null, vocal22: null, vocal16: null, vocalUrl: null, instrumentalUrl: null, stemUrls: [] });
+  $("manualVocalFile").value = $("manualInstrumentalFile").value = "";
+  for (const id of ["vocalPreview", "instrumentalPreview"]) { const el = $(id); el.pause(); el.removeAttribute("src"); el.load(); el.hidden = true; }
+  $("clearManualStems").disabled = true;
+  if ($("addonAudio")?.options[0]) $("addonAudio").options[0].textContent = "Imported song (local audio)";
+  chip("chip-asr", "", "waiting");
+  status("manualStemStatus", "Manual stems cleared. Whisper will use the original song unless you separate vocals again.");
+};
 
 // ------------------------------------------------------------------ local vocal separation (original audio remains the export source)
 // Audio decoding / STFT preparation needs browser audio APIs and stays on the page.
@@ -325,6 +411,9 @@ $("separateVocals").onclick = async () => {
     if (S.instrumentalUrl) URL.revokeObjectURL(S.instrumentalUrl);
     for (const url of (S.stemUrls || [])) { try { URL.revokeObjectURL(url); } catch {} }
     S.stemUrls = stems;
+    S.manualMixBuffer = null;
+    S.manualVocalBuffer = S.manualInstrumentalBuffer = null;
+    S.manualVocalUrl = S.manualInstrumentalUrl = null;
     // Kim_Vocal_2 is registered with Vocals as its primary stem, so index 0
     // is the vocal output and index 1 is the instrumental residual.
     S.vocalUrl = stems[0];
@@ -764,10 +853,16 @@ function isVorbisOgg(u8) {
   return head.includes("vorbis");
 }
 async function getOgg() {
-
   const p = (f) => bar("barOut", Math.round(f * 100));
+  // Manual stem mode always exports the rendered vocal + instrumental mix.
+  if (S.manualMixBuffer) {
+    status("exportStatus", "Encoding the vocal + instrumental mix to OGG..."); bar("barOut", 0);
+    const ch = [];
+    for (let i = 0; i < Math.min(2, S.manualMixBuffer.numberOfChannels); i++) ch.push(S.manualMixBuffer.getChannelData(i));
+    return encodeOgg(ch, S.manualMixBuffer.sampleRate, p);
+  }
   const u8 = new Uint8Array(S.bytes);
-  if (isVorbisOgg(u8)) return u8;                           // already what Minecraft needs: no re-encoding
+  if (isVorbisOgg(u8)) return u8; // unchanged original OGG when no manual stems were imported
   status("exportStatus", "Converting to OGG..."); bar("barOut", 0);
   const ch = []; for (let i = 0; i < S.buffer.numberOfChannels; i++) ch.push(S.buffer.getChannelData(i));
   return encodeOgg(ch.slice(0, 2), S.buffer.sampleRate, p);
