@@ -34,6 +34,16 @@
         <span class="drop-main" id="dropMain">Choose a song</span>
         <span class="drop-hint" id="dropHint">or drop it here - OGG, MP3, WAV, FLAC, M4A</span>
       </label>
+      <div class="manual-import" aria-label="Optional manual stem import">
+        <span class="manual-import-label">Optional manual stems · use anytime</span>
+        <div class="manual-import-buttons">
+          <button type="button" class="ghost small" id="importVocalBtn">＋ Vocal</button>
+          <button type="button" class="ghost small" id="importInstrumentalBtn">＋ Instrument</button>
+        </div>
+        <input type="file" id="manualVocalFile" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a" hidden>
+        <input type="file" id="manualInstrumentalFile" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a" hidden>
+        <p class="status" id="manualStemStatus" role="status"></p>
+      </div>
       <button class="primary big" id="auto" disabled>Auto-generate lyrics</button>
       <div class="bar" id="bar" hidden><i id="barFill"></i></div>
       <p class="status" id="autoStatus" role="status"></p>
@@ -51,14 +61,8 @@
         <label class="field">Separated / imported vocals <audio id="vocalPreview" controls preload="none" hidden></audio></label>
         <label class="field">Instrumental <audio id="instrumentalPreview" controls preload="none" hidden></audio></label>
       </div>
-      <details class="manual-stems" id="manualStemPanel">
-        <summary>＋ Add manually (I already separated the stems)</summary>
-        <p class="fine">Import the two files from any vocal remover. Keep both stems starting at the same point and with matching duration. Whisper will use the vocal file; the final MCAddon audio will be made by mixing vocals + instrumental.</p>
-        <label class="field">Vocal stem <input type="file" id="manualVocalFile" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a"></label>
-        <label class="field">Instrumental stem <input type="file" id="manualInstrumentalFile" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a"></label>
-        <p class="status" id="manualStemStatus" role="status"></p>
-        <button type="button" class="ghost" id="clearManualStems" disabled>Clear manual stems</button>
-      </details>
+      <p class="fine">You can use manual stems at any time, even without importing an original song. Whisper uses the vocal stem; MCAddon export mixes both stems locally.</p>
+      <button type="button" class="ghost" id="clearManualStems" disabled>Clear manual stems</button>
       <p class="fine">Automatic separation downloads the model (~67 MB) on first use. Manual mode skips that model entirely. All audio processing stays in your browser.</p>
     </div>
 

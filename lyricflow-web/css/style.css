@@ -163,7 +163,8 @@ canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: 
 .stem-previews { display: grid; gap: 10px; margin-top: 10px; }
 .stem-previews audio { display: block; width: 100%; max-width: 100%; margin-top: 6px; }
 
-.manual-stems { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.02); }
-.manual-stems summary { cursor: pointer; color: var(--ink); font-weight: 700; }
-.manual-stems input[type="file"] { width: 100%; max-width: 100%; margin-top: 5px; }
-.manual-stems .fine { margin: 9px 0; }
+.manual-import { margin: 9px 0 13px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.018); }
+.manual-import-label { display: block; color: var(--mute); font-size: .76rem; margin-bottom: 7px; }
+.manual-import-buttons { display: flex; gap: 7px; }
+.manual-import-buttons button { min-height: 32px; padding: 5px 12px; font-size: .82rem; }
+.manual-import .status { margin: 5px 0 0; }

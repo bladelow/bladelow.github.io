@@ -1,4 +1,4 @@
-import { decodeFile, resample, mixToMono, computePeaks, encodeOgg } from "./audio.js";
+import { decodeFile, resample, mixToMono, computePeaks, encodeOgg, encodeWav } from "./audio.js";
 import { Waveform } from "./waveform.js";
 import { transcribe } from "./transcribe.js";
 import { normalizeText, parseLyrics, alignLyrics, eventsFromRaw } from "./lyrics.js";
@@ -189,10 +189,12 @@ drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f)
 
 function setBusy(b) {
   S.busy = b;
-  for (const id of ["auto", "googleSearch", "openMiniSearch", "runAsr", "applyLyr", "separateVocals"]) $(id).disabled = b || !enabledNow(id);
+  for (const id of ["auto", "googleSearch", "openMiniSearch", "runAsr", "applyLyr", "separateVocals", "importVocalBtn", "importInstrumentalBtn"]) $(id).disabled = b || !enabledNow(id);
   $("cancelAsr").hidden = !(b && S.asrJob);
 }
 function enabledNow(id) {
+  if (id === "importVocalBtn" || id === "importInstrumentalBtn") return true;
+  if (id === "separateVocals") return !!S.buffer && !!S.file;
   if (!S.buffer) return false;
   if (id === "applyLyr") return !!S.raw;
   return true;
@@ -258,7 +260,7 @@ async function buildManualStemMix() {
   const vf = $("manualVocalFile").files[0];
   const inf = $("manualInstrumentalFile").files[0];
   if (!vf || !inf) {
-    status("manualStemStatus", "Choose both the vocal and instrumental files.");
+    status("manualStemStatus", !vf ? "Choose a vocal file, then choose the instrumental file." : "Vocal selected. Now choose the instrumental file to finish setup.");
     return;
   }
   if (S.busy) return;
@@ -267,6 +269,7 @@ async function buildManualStemMix() {
   try {
     const [vocalDecoded, instrumentalDecoded] = await Promise.all([decodeFile(vf), decodeFile(inf)]);
     const vocal = vocalDecoded.buffer, instrumental = instrumentalDecoded.buffer;
+    const hasOriginalSong = !!S.buffer;
     const referenceDuration = S.duration || Math.max(vocal.duration, instrumental.duration);
     if (Math.abs(vocal.duration - instrumental.duration) > 0.75) {
       throw new Error(`Stem lengths differ by ${Math.abs(vocal.duration - instrumental.duration).toFixed(2)}s. Re-export both stems with matching start/end points.`);
@@ -276,8 +279,8 @@ async function buildManualStemMix() {
     }
     const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     if (!OfflineCtx) throw new Error("OfflineAudioContext is not supported in this browser. Use the latest Chrome or Edge.");
-    const sampleRate = S.buffer?.sampleRate || Math.max(vocal.sampleRate, instrumental.sampleRate);
-    const duration = S.duration || Math.max(vocal.duration, instrumental.duration);
+    const sampleRate = hasOriginalSong ? S.buffer.sampleRate : Math.max(vocal.sampleRate, instrumental.sampleRate);
+    const duration = hasOriginalSong ? S.duration : Math.max(vocal.duration, instrumental.duration);
     const frames = Math.max(1, Math.ceil(duration * sampleRate));
     const ctx = new OfflineCtx(2, frames, sampleRate);
     const vSrc = ctx.createBufferSource(), iSrc = ctx.createBufferSource();
@@ -302,6 +305,28 @@ async function buildManualStemMix() {
     const vp = $("vocalPreview"), ip = $("instrumentalPreview");
     vp.src = S.manualVocalUrl; vp.hidden = false;
     ip.src = S.manualInstrumentalUrl; ip.hidden = false;
+    // Manual-only workflow: the two stems are enough to initialize the editor.
+    // Keep an already imported original song as the main source when one exists.
+    if (!hasOriginalSong) {
+      S.buffer = mixed;
+      S.duration = mixed.duration;
+      S.bytes = null;
+      S.file = null;
+      const mixChannels = [];
+      for (let c = 0; c < Math.min(2, mixed.numberOfChannels); c++) mixChannels.push(mixed.getChannelData(c));
+      const mixMono = mixToMono(mixChannels[0], mixChannels[1] || mixChannels[0]);
+      S.mono22 = mixMono;
+      const peaks = computePeaks(mixMono, mixed.sampleRate, 100);
+      wave.setData(peaks.peaks, peaks.perSecond, S.duration);
+      if (S.origUrl) URL.revokeObjectURL(S.origUrl);
+      S.origUrl = URL.createObjectURL(encodeWav(mixChannels, mixed.sampleRate));
+      audio.src = S.origUrl;
+      audio.playbackRate = Number($("speed").value);
+      for (const id of ["play", "stop"]) $(id).disabled = false;
+      $("dropMain").textContent = "Vocal + Instrument imported";
+      $("dropHint").textContent = `${fmtClock(S.duration)} - manual stems ready`;
+      status("autoStatus", "Manual stems ready. You can now generate lyrics without importing the original song.", "ok");
+    }
     await prepareWhisperFromBuffer(vocal);
     chip("chip-asr", "done", "manual vocals ready");
     $("clearManualStems").disabled = false;
@@ -313,6 +338,8 @@ async function buildManualStemMix() {
     status("manualStemStatus", err?.message || String(err), "err");
   } finally { setBusy(false); }
 }
+$("importVocalBtn").onclick = () => { if (!S.busy) $("manualVocalFile").click(); };
+$("importInstrumentalBtn").onclick = () => { if (!S.busy) $("manualInstrumentalFile").click(); };
 $("manualVocalFile").addEventListener("change", buildManualStemMix);
 $("manualInstrumentalFile").addEventListener("change", buildManualStemMix);
 $("clearManualStems").onclick = () => {
@@ -464,7 +491,7 @@ $("cancelAsr").onclick = () => { if (S.asrJob) S.asrJob.cancel(); };
 // Fast linear resampling from the app's 22.05 kHz mono buffer to Whisper's 16 kHz input.
 // This avoids a long OfflineAudioContext render that can look like a frozen button on phones/low-end PCs.
 async function to16k(mono22) {
-  if (!mono22 || !mono22.length) throw new Error("Import a song before transcribing.");
+  if (!mono22 || !mono22.length) throw new Error("Import a song or both manual stems before transcribing.");
   const outLength = Math.max(1, Math.floor(mono22.length * 16000 / 22050));
   const out = new Float32Array(outLength);
   const ratio = 22050 / 16000;
@@ -479,7 +506,7 @@ async function to16k(mono22) {
 }
 
 async function runTranscribe() {
-  if (!S.mono22) throw new Error("Import a song before transcribing.");
+  if (!S.mono22) throw new Error("Import a song or both manual stems before transcribing.");
   chip("chip-asr", "run", "working"); bar("barAsr", -1);
   let job = null;
   try {
@@ -645,7 +672,7 @@ const list = $("list");
 function renderWords() {
   list.innerHTML = "";
   if (!S.events.length) {
-    list.innerHTML = '<p class="empty">No words yet. Import a song and press Auto-generate lyrics.</p>';
+    list.innerHTML = '<p class="empty">No words yet. Import a song or both manual stems, then press Auto-generate lyrics.</p>';
   } else {
     const frag = document.createDocumentFragment();
     S.events.forEach((e, i) => {
