@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12151c">
+<title>LyricGlyph Generator — Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<!-- Keep ONNX Runtime as a shared peer dependency so the app can enable its proxy worker before the separator creates a session. -->
+<script type="importmap">
+{
+  "imports": {
+    "onnxruntime-web": "https://esm.sh/onnxruntime-web@1.29.0"
+  }
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo" aria-hidden="true"></span><h1>LyricGlyph Generator</h1></div>
+  <p class="sub">Song in, word-timed lyrics out - for your LyricGlyph addon</p>
+</header>
+
+<main class="layout">
+  <section class="rail" aria-label="Steps">
+
+    <div class="card" id="card-song">
+      <h2>Song</h2>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="audio/*,.ogg,.oga,.opus,.mp3,.wav,.flac,.m4a,.aac">
+        <span class="drop-main" id="dropMain">Choose a song</span>
+        <span class="drop-hint" id="dropHint">or drop it here - OGG, MP3, WAV, FLAC, M4A</span>
+      </label>
+      <button class="primary big" id="auto" disabled>Auto-generate lyrics</button>
+      <div class="bar" id="bar" hidden><i id="barFill"></i></div>
+      <p class="status" id="autoStatus" role="status"></p>
+      <p class="fine">Runs the four steps below in order. Each step can also be run on its own.</p>
+    </div>
+
+    <div class="card" id="card-local-audio">
+      <h2>Audio preparation</h2>
+      <p class="local-note">Separate vocals automatically before AI transcription.</p>
+      <p class="fine">The original song stays untouched for playback and MCAddon export. A separate vocals-only track is created locally in your browser and used only by Whisper.</p>
+      <button id="separateVocals" disabled>✨ Separate vocals for AI</button>
+      <div class="bar" id="barSep" hidden><i></i></div>
+      <p class="status" id="sepStatus" role="status"></p>
+      <div class="stem-previews" aria-live="polite">
+        <label class="field">Separated vocals <audio id="vocalPreview" controls preload="none" hidden></audio></label>
+        <label class="field">Instrumental <audio id="instrumentalPreview" controls preload="none" hidden></audio></label>
+      </div>
+      <p class="fine">First use downloads the vocal-separation model (~67 MB), then your browser may cache it. Separation runs locally with ONNX Runtime WASM; model inference is proxied to a worker. CPU-only processing can take several minutes. The separator currently does not report percentage progress, so the timer is elapsed time, not a progress estimate.</p>
+    </div>
+
+    <div class="card" id="card-lyr">
+      <h2>Lyrics <span class="chip" id="chip-lyr">waiting</span></h2>
+            <label class="field">Song name <input id="title" autocomplete="off" placeholder="Song title"></label>
+      <div class="btnrow">
+        <button id="googleSearch" disabled>Search lyrics on Google</button>
+        <button id="openMiniSearch" disabled>Open lyrics search panel</button>
+      </div>
+      <section class="mini-browser" id="miniBrowser" hidden>
+        <div class="mini-toolbar">
+          <input id="miniQuery" type="text" placeholder="Search Google for lyrics">
+          <button id="miniGo">Search in Google</button>
+          <button class="ghost" id="miniPaste">Paste copied lyrics</button>
+          <button class="ghost" id="miniClose">Close</button>
+        </div>
+        <div class="search-help">
+          <strong>Google opens in a separate tab</strong>
+          <p class="fine">Google does not allow its search page to be embedded inside LyricGlyph. Search in the new tab, copy the lyrics, return here, then use “Paste copied lyrics”.</p>
+          <button class="ghost" id="miniPaste">Paste copied lyrics</button>
+        </div>
+      </section>
+      <label class="field">Lyrics for timing
+        <textarea id="lyricsText" rows="7" spellcheck="false" placeholder="Paste the lyrics you found here. [Chorus] tags are ignored."></textarea></label>
+      <p class="status" id="lyrStatus" role="status"></p>
+      <button id="applyLyr" disabled>Apply lyrics to timing</button>
+    </div>
+
+    <div class="card" id="card-asr">
+      <h2>Transcribe <span class="chip" id="chip-asr">waiting</span></h2>
+      <div class="two">
+        <label class="field">Accuracy
+          <select id="model">
+            <option value="Xenova/whisper-tiny.en">Fast - tiny (40 MB)</option>
+            <option value="Xenova/whisper-base.en" selected>Balanced - base (75 MB)</option>
+            <option value="Xenova/whisper-small.en">Best - small (250 MB)</option>
+          </select></label>
+        <label class="field">Run on
+          <select id="device">
+            <option value="wasm" selected>Processor (works everywhere)</option>
+            <option value="webgpu">Graphics chip (faster, newer browsers)</option>
+          </select></label>
+      </div>
+      <button id="runAsr" disabled>Transcribe</button>
+      <button class="ghost" id="cancelAsr" hidden>Cancel</button>
+      <div class="bar" id="barAsr" hidden><i></i></div>
+      <p class="status" id="asrStatus" role="status"></p>
+      <p class="fine">Whisper uses the separated vocal track when available; otherwise it falls back to the original song. The speech model downloads once.</p>
+    </div>
+  </section>
+
+  <section class="stage" aria-label="Editor">
+
+    <div class="card player" id="card-player">
+      <div class="glyph" id="glyph" aria-live="off"><span id="glyphWord">-</span></div>
+      <div class="wavewrap"><canvas id="wave" aria-label="Waveform. Tap to seek, drag to pan, pinch to zoom."></canvas></div>
+      <div class="transport">
+        <button class="icon" id="play" disabled aria-label="Play or pause">Play</button>
+        <button class="icon" id="stop" disabled>Stop</button>
+        <span class="time" id="time">0:00.00 / 0:00.00</span>
+        <span class="spacer"></span>
+        <button class="icon" id="zoomOut" aria-label="Zoom out">-</button>
+        <button class="icon" id="zoomIn" aria-label="Zoom in">+</button>
+        <button class="icon" id="fit">Fit</button>
+      </div>
+      <div class="transport sec">
+        <label class="inline">Speed
+          <select id="speed"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option></select></label>
+        <label class="check inline"><input type="checkbox" id="follow" checked> Follow</label>
+      </div>
+    </div>
+
+    <div class="card" id="card-words">
+      <h2>Words <span class="count" id="count">0 words</span></h2>
+      <div class="tools" id="tools">
+        <button id="addWord" disabled>Add word at playhead</button>
+        <button id="setTime" disabled>Set time = playhead</button>
+        <button id="minus" disabled>-0.05s</button>
+        <button id="plus" disabled>+0.05s</button>
+        <button id="playWord" disabled>Play word</button>
+        <button id="playSel" disabled>Play selection</button>
+        <label class="check inline"><input type="checkbox" id="loop"> Loop</label>
+        <button id="nextUnc" disabled>Next uncertain</button>
+        <button id="reviewed" disabled>Mark reviewed</button>
+        <button id="sort" disabled>Sort by time</button>
+        <button class="danger" id="del" disabled>Delete</button>
+      </div>
+      <div class="legend"><i class="sw unc"></i> uncertain - check these <i class="sw"></i> confident</div>
+      <div class="timeline-head"><strong>Word timeline</strong><span class="fine">One track · drag words or the playhead · pinch/scroll to navigate</span></div>
+      <div class="timeline-controls" aria-label="Timeline controls">
+        <button id="timelineBack" type="button" title="Back 0.5 seconds">−0.5s</button>
+        <button id="timelinePlayPause" type="button">Play / Pause</button>
+        <button id="timelineForward" type="button" title="Forward 0.5 seconds">+0.5s</button>
+        <span class="timeline-control-spacer"></span>
+        <button id="timelineZoomOut" type="button" aria-label="Zoom out">−</button>
+        <button id="timelineZoomFit" type="button">Fit</button>
+        <button id="timelineZoomIn" type="button" aria-label="Zoom in">+</button>
+      </div>
+      <div class="timeline-scroll" id="timelineScroll"><div class="timeline" id="timeline"><p class="empty">Generate words to edit them on the timeline.</p></div></div>
+      <div class="list" id="list" role="list"><p class="empty">No words yet. Import a song and press Auto-generate lyrics.</p></div>
+      <p class="fine">Tap a row to select it (Shift/Ctrl for several). Edit the time or the word directly. Double-tap the number to play from there.</p>
+    </div>
+
+    <div class="card" id="card-export">
+      <h2>Export</h2>
+      <div class="two">
+        <label class="field">Title in the addon <input id="expTitle" autocomplete="off"></label>
+        <label class="field">File name <input id="expName" autocomplete="off" value="song.js"></label>
+      </div>
+      <ul class="problems" id="problems" hidden></ul>
+      <details class="more" open>
+        <summary>JavaScript preview</summary>
+        <textarea id="preview" rows="8" readonly spellcheck="false"></textarea>
+      </details>
+      <div class="btnrow">
+        <button class="primary" id="dlJs" disabled>Download .js</button>
+        <button id="copyJs" disabled>Copy</button>
+      </div>
+
+      <h3>Put it straight into your addon</h3>
+      <p class="fine">Choose your LyricGlyph <code>.mcaddon</code>. The song and its lyrics file are placed in a free slot and you download the updated addon.</p>
+      <label class="drop small"><input type="file" id="addonFile" accept=".mcaddon,.zip"><span class="drop-main" id="addonName">Choose your .mcaddon</span></label>
+      <div id="addonBox" hidden>
+        <fieldset class="slots" id="slots"><legend>Song slot</legend></fieldset>
+        <label class="field">Audio to put in the addon
+          <select id="addonAudio"><option value="orig">Imported song (local audio)</option></select></label>
+        <div class="btnrow">
+          <button class="primary" id="buildAddon" disabled>Build updated addon</button>
+          <button id="dlOgg" disabled>Download song as .ogg</button>
+        </div>
+      </div>
+      <div class="bar" id="barOut" hidden><i></i></div>
+      <p class="status" id="exportStatus" role="status"></p>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<audio id="audio" preload="auto"></audio>
+<script src="js/vendor/jszip.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
