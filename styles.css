@@ -196,3 +196,59 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+
+
+/* TEAM BAAG RECRUITMENT */
+
+.recruitment-section {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.recruitment-header {
+  margin-bottom: 1.5rem;
+}
+
+.recruitment-label {
+  display: block;
+  color: var(--edge);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  margin-bottom: 12px;
+}
+
+.recruitment-header h2 {
+  margin-bottom: 12px;
+}
+
+.recruitment-header p {
+  max-width: 550px;
+  color: var(--steel);
+  line-height: 1.7;
+}
+
+.recruitment-frame {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #0b0f0b;
+}
+
+.recruitment-frame iframe {
+  display: block;
+  width: 100%;
+  height: 1800px;
+  border: none;
+  background: transparent;
+}
+
+@media(max-width: 600px) {
+  .recruitment-frame iframe {
+    height: 1950px;
+  }
+}
+
