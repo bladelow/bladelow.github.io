@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aiko Control Panel</title>
+    <link rel="stylesheet" href="/panel.css">
+</head>
+<body>
+    <main class="shell">
+        <header class="header">
+            <p class="eyebrow">AIKO / CONTROL</p>
+            <h1>Server control panel</h1>
+            <p class="muted">Tune progression, moderation, links, and Aiko's personality.</p>
+        </header>
+        <form method="post" action="__FORM_ACTION__" class="grid">
+            <section class="panel">
+                <h2>Progression</h2>
+                <label class="toggle"><input type="hidden" name="xpEnabled" value="off"><input type="checkbox" name="xpEnabled" value="on"__XP_ENABLED__> Enable XP and levels</label>
+                <label>XP per message<input type="number" name="xpPerMessage" min="1" value="__XP_PER_MESSAGE__"></label>
+                <label>XP cooldown (milliseconds)<input type="number" name="xpCooldownMs" min="1000" value="__XP_COOLDOWN__"></label>
+                <label>Coins per level<input type="number" name="levelUpCoins" min="0" value="__LEVEL_COINS__"></label>
+                <label>Level-up channel ID<input name="levelUpChannelId" value="__LEVEL_UP_CHANNEL__" placeholder="Discord channel ID"></label>
+                <label>Level-up message<textarea name="levelUpMessage">__LEVEL_UP_MESSAGE__</textarea></label>
+                <p class="hint">Placeholders: {user}, {username}, {level}, {previousLevel}, {coins}</p>
+                <label class="toggle"><input type="hidden" name="levelUpEnabled" value="off"><input type="checkbox" name="levelUpEnabled" value="on"__LEVEL_UP_ENABLED__> Enable level-up announcements</label>
+                <label class="toggle"><input type="hidden" name="levelUpMention" value="off"><input type="checkbox" name="levelUpMention" value="on"__LEVEL_UP_MENTION__> Mention the member</label>
+                <label class="toggle"><input type="hidden" name="levelUpImageEnabled" value="off"><input type="checkbox" name="levelUpImageEnabled" value="on"__LEVEL_UP_IMAGE_ENABLED__> Send level-up image</label>
+                <label>Image title<input name="levelUpImageTitle" value="__LEVEL_UP_IMAGE_TITLE__"></label>
+                <label>Image width<input type="number" name="levelUpImageWidth" min="600" value="__LEVEL_UP_IMAGE_WIDTH__"></label>
+                <label>Image height<input type="number" name="levelUpImageHeight" min="240" value="__LEVEL_UP_IMAGE_HEIGHT__"></label>
+                <label>Accent color<input type="text" name="levelUpAccentColor" value="__LEVEL_UP_ACCENT__"></label>
+                <label>Background color<input type="text" name="levelUpBackgroundColor" value="__LEVEL_UP_BACKGROUND__"></label>
+                <label class="toggle"><input type="hidden" name="levelUpShowAvatar" value="off"><input type="checkbox" name="levelUpShowAvatar" value="on"__LEVEL_UP_SHOW_AVATAR__> Show avatar</label>
+                <label class="toggle"><input type="hidden" name="levelUpShowTransition" value="off"><input type="checkbox" name="levelUpShowTransition" value="on"__LEVEL_UP_SHOW_TRANSITION__> Show level transition</label>
+                <p class="hint">Image defaults: 1200 × 400, title LEVEL-UP!, accent #8CFF00, background #080A08.</p>
+            </section>
+            <section class="panel">
+                <h2>Moderation</h2>
+                <label class="toggle"><input type="hidden" name="moderationEnabled" value="off"><input type="checkbox" name="moderationEnabled" value="on"__MODERATION_ENABLED__> Enable moderation</label>
+                <label class="toggle"><input type="hidden" name="spamEnabled" value="off"><input type="checkbox" name="spamEnabled" value="on"__SPAM_ENABLED__> Detect repeated messages</label>
+                <label class="toggle"><input type="hidden" name="linkFilterEnabled" value="off"><input type="checkbox" name="linkFilterEnabled" value="on"__LINK_FILTER_ENABLED__> Block non-allowed links</label>
+                <label class="toggle"><input type="hidden" name="allowServerOwner" value="off"><input type="checkbox" name="allowServerOwner" value="on"__ALLOW_SERVER_OWNER__> Allow server owner to bypass link filter</label>
+                <label class="toggle"><input type="hidden" name="allowAdministrators" value="off"><input type="checkbox" name="allowAdministrators" value="on"__ALLOW_ADMINISTRATORS__> Allow administrators to bypass link filter</label>
+                <label>Ignored role IDs (comma-separated)<input name="ignoredLinkRoles" value="__IGNORED_LINK_ROLES__" placeholder="123456789012345678, 987654321098765432"></label>
+                <label>Repeated messages before timeout<input type="number" name="spamLimit" min="2" value="__SPAM_LIMIT__"></label>
+                <label>Spam detection window (milliseconds)<input type="number" name="spamWindowMs" min="1000" value="__SPAM_WINDOW__"></label>
+                <label>Timeout duration (milliseconds)<input type="number" name="spamTimeoutMs" min="5000" value="__SPAM_TIMEOUT__"></label>
+                <label>Allowed link domains<textarea name="allowedLinks" placeholder="discord.com, youtube.com, github.com">__ALLOWED_LINKS__</textarea></label>
+                <label>Per-channel link rules<textarea name="linkRules" placeholder="123456789012345678=youtube.com&#10;987654321098765432=discord.gg, discord.com">__LINK_RULES__</textarea></label>
+                <p class="hint">One rule per line: channel ID = allowed domains. A channel rule overrides the global list.</p>
+            </section>
+            <section class="panel wide">
+                <h2>AI behavior</h2>
+                <label class="toggle"><input type="hidden" name="aiEnabled" value="off"><input type="checkbox" name="aiEnabled" value="on"__AI_ENABLED__> Enable Aiko AI chat</label>
+                <label>Provider<select name="aiProvider"><option value="auto"__AUTO_SELECTED__>Auto failover</option><option value="gemini"__GEMINI_SELECTED__>Gemini</option><option value="openrouter"__OPENROUTER_SELECTED__>OpenRouter</option></select></label>
+                <label>OpenRouter model<input name="openRouterModel" value="__OPENROUTER_MODEL__" placeholder="deepseek/deepseek-r1:free"></label>
+                <label>Extra prompt instructions<textarea name="aiPrompt">__AI_PROMPT__</textarea></label>
+            </section>
+            <section class="panel wide">
+                <h2>AI memory</h2>
+                <label>Fresh messages to retain<input type="number" name="memoryFreshLimit" min="4" value="__MEMORY_FRESH_LIMIT__"></label>
+                <label>Keep recent chat for hours<input type="number" name="memoryFreshHours" min="1" max="168" value="__MEMORY_FRESH_HOURS__"></label>
+                <label>Relevant memories per prompt<input type="number" name="memoryRetrievalLimit" min="2" value="__MEMORY_RETRIEVAL_LIMIT__"></label>
+                <label>Weekly review after days<input type="number" name="memoryWeeklyDays" min="1" value="__MEMORY_WEEKLY_DAYS__"></label>
+                <label>Monthly review after days<input type="number" name="memoryMonthlyDays" min="7" value="__MEMORY_MONTHLY_DAYS__"></label>
+                <label>Deletion threshold (0 to 1)<input type="number" name="memoryDeleteThreshold" min="0" max="1" step="0.01" value="__MEMORY_DELETE_THRESHOLD__"></label>
+            </section>
+            <section class="panel">
+                <h2>Automatic conversation</h2>
+                <label class="toggle"><input type="hidden" name="autoConversationEnabled" value="off"><input type="checkbox" name="autoConversationEnabled" value="on"__AUTO_CONVERSATION_ENABLED__> Let Aiko start conversations</label>
+                <label>Allowed channel IDs (comma-separated)<input name="autoConversationChannels" value="__AUTO_CONVERSATION_CHANNELS__" placeholder="123456789012345678"></label>
+                <label>Excluded channel IDs<input name="excludedChannels" value="__EXCLUDED_CHANNELS__" placeholder="123456789012345678"></label>
+                <label>Start after inactivity (minutes)<input type="number" name="inactiveMinutes" min="1" value="__INACTIVE_MINUTES__"></label>
+                <label>Cooldown per channel (minutes)<input type="number" name="autoConversationCooldownMinutes" min="1" value="__AUTO_CONVERSATION_COOLDOWN__"></label>
+                <label>Maximum messages per day<input type="number" name="maxAutoMessagesPerDay" min="1" value="__MAX_AUTO_MESSAGES__"></label>
+            </section>
+            <section class="panel">
+                <h2>Daily quiz</h2>
+                <label>Quiz channel ID<input name="quizChannelId" value="__QUIZ_CHANNEL_ID__" placeholder="Discord channel ID"></label>
+                <label>Timezone<input name="quizTimezone" value="__QUIZ_TIMEZONE__" placeholder="Asia/Kolkata"></label>
+                <label>Quiz duration (hours)<input type="number" name="quizDurationHours" min="1" value="__QUIZ_DURATION__"></label>
+                <label>Winner Blade Coins<input type="number" name="quizWinnerCoins" min="0" value="__QUIZ_WINNER_COINS__"></label>
+                <label>Participant Blade Coins<input type="number" name="quizParticipantCoins" min="0" value="__QUIZ_PARTICIPANT_COINS__"></label>
+                <p class="hint">A fresh Minecraft, technology, PC, or gaming quiz is posted at midnight in this timezone.</p>
+            </section>
+            <button type="submit">Save settings</button>
+        </form>
+    </main>
+</body>
+</html>
